@@ -1,3 +1,4 @@
+
 {
   "name": "fielddb-angular",
   "version": "2.14.0",
@@ -5,9 +6,14 @@
     "type": "git",
     "url": "git://github.com/OpenSourceFieldlinguistics/bower-fielddb-angular.git"
   },
-  "dependencies": {
+  "description": "Angular directives to interact with FieldDBs",
+  "homepage": "http://opensourcefieldlinguistics.github.io/FieldDB/",
+  "bugs": {
+    "url": "https://github.com/OpenSourceFieldlinguistics/FieldDB/issues"
   },
+  "dependencies": {},
   "main": "dist/styles/vendor.css, dist/styles/main.css, dist/scripts/vendor.js, dist/scripts/scripts.js, dist/scripts/templates.js",
-  "devDependencies": {
-  }
+  "devDependencies": {},
+  "license": "Apache 2.0",
+  "ignore": []
 }
