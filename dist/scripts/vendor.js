@@ -66053,15 +66053,6 @@ angular.module('contenteditable', [])
  * To change this template use File | Settings | File Templates.
  */
 
-(function(angular){
-
-function isDnDsSupported(){
-    return 'draggable' in document.createElement("span");
-}
-
-if(!isDnDsSupported()){
-    return;
-}
 
 if (window.jQuery && (-1 == window.jQuery.event.props.indexOf("dataTransfer"))) {
     window.jQuery.event.props.push("dataTransfer");
@@ -66424,4 +66415,3 @@ angular.module("ang-drag-drop",[])
         }
     ]);
 
-}(angular));
