@@ -26,26 +26,39 @@ var app = angular.module("fielddbAngularApp", [
     // Allow same origin resource loads.
     "self",
     // Allow loading from outer domain.
-    "https://*.lingsync.org/**"
+    "https://youtube.com/**",
+    "https://youtu.be/**",
+    "https://soundcloud.com/**",
+    "https://*.lingsync.org/**",
+    "https://localhost:3184/**",
+    "https://localhost/**"
   ]);
+  if (FieldDB && FieldDB.PsycholinguisticsApp && FieldDB.Contextualizer && FieldDB.User) {
+    var fieldDBApp = new FieldDB.PsycholinguisticsApp({
+      authentication: {
+        user: new FieldDB.User({
+          authenticated: false
+        })
+      },
+      contextualizer: new FieldDB.Contextualizer().loadDefaults(),
+      online: true,
+      apiURL: "https://localhost:3181/v2/",
+      offlineCouchURL: "https://localhost:6984",
+      brand: "LingSync",
+      website: "http://lingsync.org",
+      basePathname: "/",
+    });
+    if (window.location.pathname.indexOf("android_asset") > -1) {
+      fieldDBApp.basePathname = window.location.pathname;
+    }
+  }
+  // if (window.location.hash.indexOf("#") > -1) {
+  //   fieldDBApp.basePathname = window.location.pathname + "#";
+  // }
 
-  new FieldDB.PsycholinguisticsApp({
-    authentication: {
-      user: new FieldDB.User({
-        authenticated: false
-      })
-    },
-    contextualizer: new FieldDB.Contextualizer().loadDefaults(),
-    online: true,
-    apiURL: "https://localhost:3181/v2/",
-    offlineCouchURL: "https://localhost:6984",
-    brand: "LingSync",
-    website: "http://lingsync.org"
-  });
-
-  FieldDB.Database.prototype.BASE_DB_URL = "https://corpusdev.lingsync.org";
-  FieldDB.Database.prototype.BASE_AUTH_URL = "https://authdev.lingsync.org";
-  FieldDB.AudioVideo.prototype.BASE_SPEECH_URL = "https://speechdev.lingsync.org";
+  // FieldDB.Database.prototype.BASE_DB_URL = "https://corpusdev.example.org";
+  // FieldDB.Database.prototype.BASE_AUTH_URL = "https://authdev.example.org";
+  // FieldDB.AudioVideo.prototype.BASE_SPEECH_URL = "https://speechdev.example.org";
 
 });
 console.log(app);
@@ -69,19 +82,38 @@ console.log(app);
 /* globals FieldDB */
 
 angular.module("fielddbAngularApp").controller("FieldDBController", ["$scope", "$routeParams", "$rootScope",
-  function($scope, $routeParams) {
+  function($scope, $routeParams, $rootScope) {
 
     if (FieldDB && FieldDB.FieldDBObject && FieldDB.FieldDBObject.application) {
       $scope.application = FieldDB.FieldDBObject.application;
+      FieldDB.FieldDBObject.render = function() {
+        try {
+          if (!$scope.$$phase) {
+            $scope.$apply(); //$digest or $apply
+          }
+        } catch (e) {
+          console.warn("Rendering generated an erorr", e);
+        }
+      };
     } else {
-      console.warn("The fielddb application was never created, are you sure you didn new FieldDB.APP() somewhere?");
-      window.alert("The app is broken, please report this. ");
+      console.warn("The fielddb application was never created, are you sure you did new FieldDB.APP() somewhere?");
+      window.alert("The app cannot load, please report this. ");
     }
-
-    $scope.application.render = function() {
-      if (!$scope.$$phase) {
-        $scope.$apply(); //$digest or $apply
+    $rootScope.contextualize = function(message) {
+      if (!FieldDB || !FieldDB.FieldDBObject || !FieldDB.FieldDBObject.application || !FieldDB.FieldDBObject.application.contextualizer || !FieldDB.FieldDBObject.application.contextualizer.data) {
+        return message;
       }
+      var result = FieldDB.FieldDBObject.application.contextualize(message);
+      if ($rootScope.corpus && $rootScope.corpus.pouchname && FieldDB) {
+        var url = $rootScope.corpus.url || FieldDB.Database.prototype.BASE_DB_URL + "/" + $rootScope.corpus.pouchname;
+        result = result
+          .replace(/CORPUS_DB_URL/g, url)
+          .replace(/CORPUS_PAGE_URL/g, "http://lingsync.org/" + $rootScope.corpus.pouchname.replace("-", "/") + "/" + $rootScope.corpus.titleAsUrl);
+      }
+      // if (!$scope.$$phase) {
+      //   $scope.$digest(); //$digest or $apply
+      // }
+      return result;
     };
 
     $scope.loginDetails = $scope.loginDetails || {
@@ -89,7 +121,9 @@ angular.module("fielddbAngularApp").controller("FieldDBController", ["$scope", "
       password: ""
     };
     $scope.application.debug($scope.application);
-    $scope.application.processRouteParams($routeParams);
+    if ($routeParams) {
+      $scope.application.processRouteParams($routeParams);
+    }
     // FieldDB.FieldDBConnection.connect();
 
     console.log("FieldDBController was loaded, this means almost everything in the corpus is available now");
@@ -256,12 +290,12 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
       if ($scope.application.authentication.user.accessibleDBS.indexOf("sails/fr-ca") > -1) {
         console.log("Redirecting the user to the manage sails dashboard" + "/sails/fr-ca/datalists");
         $scope.$apply(function() {
-          $location.path("/sails/fr-ca/datalists", false);
+          $location.path($scope.application.basePathname + "/sails/fr-ca/datalists", false);
         });
-      } else if ($location.path() === "/welcome" || $location.path() === "/bienvenu" || window.location.pathname === "/welcome" || window.location.pathname === "/bienvenu" || (window.location.pathname === "/" && $scope.application.authentication.user.accessibleDBS.length === 1) ) {
+      } else if ($location.path().indexOf("welcome") > -1 || $location.path().indexOf("bienvenu") > -1 || window.location.pathname.indexOf("welcome") > -1 || window.location.pathname.indexOf("bienvenu") > -1 || (window.location.pathname === $scope.application.basePathname + "/" && $scope.application.authentication.user.accessibleDBS.length === 1)) {
         $scope.$apply(function() {
           //http://joelsaupe.com/programming/angularjs-change-path-without-reloading/
-          $location.path("/" + $scope.application.authentication.user.mostrecentdb, false);
+          $location.path($scope.application.basePathname + "/" + $scope.application.authentication.user.mostrecentdb, false);
         });
       }
       $timeout(function() {
@@ -277,6 +311,10 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
     $scope.login = function(loginDetails) {
       $scope.isContactingServer = true;
       $scope.application.authentication.error = "";
+      if (!FieldDB || !FieldDB.Database) {
+        console.warn("Authentication is handled by FieldDB, whcih is not currently loaded");
+        return;
+      }
       FieldDB.Database.prototype.login(loginDetails).then(function(user) {
         console.log("User has been downloaded. ", user);
         user = new FieldDB.User(user);
@@ -299,6 +337,10 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
 
     $scope.logout = function() {
       $scope.application.authentication.error = "";
+      if (!FieldDB || !FieldDB.Database) {
+        console.warn("Authentication is handled by FieldDB, whcih is not currently loaded");
+        return;
+      }
       FieldDB.Database.prototype.logout().then(function(serverReply) {
         console.log("User has been logged out. ", serverReply);
         $scope.application.authentication = {
@@ -306,10 +348,10 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
             authenticated: false
           })
         };
-        if (window.location.pathname !== "/welcome" && window.location.pathname !== "/bienvenu") {
+        if (window.location.pathname.indexOf("welcome") < 0 && window.location.pathname.indexOf("bienvenu") < 0) {
           $scope.$apply(function() {
-            // $location.path("/welcome/", false);
-            window.location.replace("/welcome");
+            // $location.path($scope.application.basePathname +  "/welcome/", false);
+            window.location.replace($scope.application.basePathname + "/welcome");
           });
         }
         $scope.$digest();
@@ -327,6 +369,10 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
       //   console.log("User cant resume authentication session, corpus is not defined ");
       //   return;
       // }
+      if (!FieldDB || !FieldDB.Database) {
+        console.warn("Authentication is handled by FieldDB, whcih is not currently loaded");
+        return;
+      }
       FieldDB.Database.prototype.resumeAuthenticationSession().then(function(sessionInfo) {
         $scope.application.debug(sessionInfo);
         if (sessionInfo.ok && sessionInfo.userCtx.name) {
@@ -334,10 +380,10 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
           $scope.application.authentication.user.roles = sessionInfo.userCtx.roles;
           processUserDetails($scope.application.authentication.user);
         } else {
-          if (window.location.pathname !== "/welcome" && window.location.pathname !== "/bienvenu") {
+          if (window.location.pathname.indexOf("welcome") < 0 && window.location.pathname.indexOf("bienvenu") < 0) {
             $scope.$apply(function() {
-              // $location.path("/welcome/", false);
-              window.location.replace("/welcome");
+              // $location.path($scope.application.basePathname + "/welcome/", false);
+              window.location.replace($scope.application.basePathname + "/welcome");
             });
           }
         }
@@ -346,7 +392,7 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
         $scope.error = "Unable to resume.";
         $scope.$digest();
         // $scope.$apply(function() {
-        //   $location.path("/welcome");
+        //   $location.path($scope.application.basePathname + "/welcome");
         // });
       });
     };
@@ -385,9 +431,20 @@ angular.module("fielddbAngularApp").directive("fielddbAuthentication", function(
  * # fielddbImport
  */
 angular.module("fielddbAngularApp").directive("fielddbImport", function() {
-
-  var controller = function($scope, $upload) {
+  var rootScope;
+  var controller = function($scope, $upload, $rootScope) {
+    rootScope = $rootScope;
+    if (FieldDB && FieldDB.FieldDBObject && FieldDB.FieldDBObject.application) {
+      $scope.application = FieldDB.FieldDBObject.application;
+    }
     var processOffline = true;
+    $scope.uploadInfo = {
+      token: "uploadingfromspreadsheet",
+      username: "testupload",
+      returnTextGrid: true
+    };
+
+
 
     var progress = function(evt) {
       console.log("percent: " + parseInt(100.0 * evt.loaded / evt.total));
@@ -398,42 +455,54 @@ angular.module("fielddbAngularApp").directive("fielddbImport", function() {
     };
     $scope.removeRow = function(row) {
       console.log("remove ", row);
-      var removed = $scope.application.importer.asCSV.splice(row, 1);
+      var removed = $scope.importer.asCSV.splice(row, 1);
       console.log(removed);
     };
 
     $scope.dropSuccessHandler = function(participantFieldLabel) {
-      $scope.application.importer.debug("dropSuccessHandler", participantFieldLabel);
-      $scope.application.importer.todo("change import.html drag=\"participantField.labelExperimenter\" to send the entire participantfield");
-      $scope.application.importer.todo("Use this dropSuccessHandler function for creating an acivity?");
+      $scope.importer.debug("dropSuccessHandler", participantFieldLabel);
+      $scope.importer.todo("change import.html drag=\"participantField.labelExperimenter\" to send the entire participantfield");
+      $scope.importer.todo("Use this dropSuccessHandler function for creating an acivity?");
     };
     $scope.onDropRecieved = function(data, extractedHeader, headerCellIndex) {
-      $scope.application.importer.debug("onDropRecieved", data, extractedHeader, headerCellIndex);
+      $scope.importer.debug("onDropRecieved", data, extractedHeader, headerCellIndex);
       extractedHeader[headerCellIndex] = data;
-      $scope.application.importer.todo("change Import.js to use fields for the extractedHeader cells instead of just labels.");
+      $scope.importer.todo("change Import.js to use fields for the extractedHeader cells instead of just labels.");
+    };
+
+    var verifyImporterIsSetup = function() {
+      if (!FieldDB) {
+        console.warn("you catn import very much with out FieldDB, it is not loaded");
+        return;
+      }
+      $scope.importer = $scope.importer || new FieldDB.Import();
+      $scope.importer.status = "";
+      $scope.importer.error = "";
+      $scope.importer.importType = $scope.importer.importType || "data";
+      $scope.importer.corpus = $scope.application.corpus;
+      $scope.importer.dbname = $scope.application.corpus.dbname || "default";
     };
 
     $scope.onFileSelect = function($files) {
       //$files: an array of files selected, each file has name, size, and type.
+      $scope.importer.uploadtoken = $scope.uploadInfo.token;
+      $scope.importer.username = $scope.uploadInfo.username;
+      $scope.importer.returnTextGrid = $scope.uploadInfo.returnTextGrid;
+
       if (processOffline) {
         if (!$scope.application || !$scope.application.corpus) {
-          $scope.application.importer.bug("The corpus is not loaded yet. Please report this.");
+          $scope.importer.bug("The corpus is not loaded yet. Please report this.");
           return;
         }
-        $scope.application.importer = $scope.application.importer || new FieldDB.Import();
-        $scope.application.importer.status = "";
-        $scope.application.importer.error = "";
-        $scope.application.importer.rawText = "";
-        $scope.application.importer.importType = $scope.application.importer.importType || "data";
-        $scope.application.importer.corpus = $scope.application.corpus;
-        $scope.application.importer.dbname = $scope.application.corpus.dbname || "default";
-        $scope.application.importer.files = $files;
+        verifyImporterIsSetup();
+        $scope.importer.rawText = "";
+        $scope.importer.files = $files;
 
-        console.log($scope.application.importer);
-        $scope.application.importer.readFiles({}).then(function(sucessfullOptions) {
+        console.log($scope.importer);
+        $scope.importer.readFiles({}).then(function(sucessfullOptions) {
           console.log("Finished reading files ", sucessfullOptions);
           $scope.$digest();
-          $scope.application.importer.guessFormatAndPreviewImport();
+          $scope.importer.guessFormatAndPreviewImport();
           $scope.$digest();
 
         }, function(failedOptions) {
@@ -441,6 +510,14 @@ angular.module("fielddbAngularApp").directive("fielddbImport", function() {
           $scope.$digest();
         });
       } else {
+        $scope.importer.uploadFiles($files).then(function(result) {
+          $scope.importer.todo(" Got an upload result in the angular directive", result);
+          $scope.$digest();
+        }, function(reason) {
+          console.log(reason);
+        });
+
+
         for (var i = 0; i < $files.length; i++) {
           var file = $files[i];
 
@@ -471,13 +548,23 @@ angular.module("fielddbAngularApp").directive("fielddbImport", function() {
       // $scope.upload = $upload.http({...})  see 88#issuecomment-31366487 for sample code.
     };
 
-    $scope.runImport = function() {
-      if (!$scope.application.importer) {
+    $scope.guessFormatAndPreviewImport = function() {
+      if (!$scope.importer) {
+        console.warn("The importer is undefined and the user is trying to import are you sure you passed an importer to this directive? or that your application has an importer?");
         return;
       }
-      $scope.application.importer.convertTableIntoDataList().then(function(results) {
+      verifyImporterIsSetup();
+      $scope.importer.guessFormatAndPreviewImport();
+    };
+
+    $scope.runImport = function() {
+      if (!$scope.importer) {
+        console.warn("The importer is undefined and the user is trying to import are you sure you passed an importer to this directive? or that your application has an importer?");
+        return;
+      }
+      $scope.importer.convertTableIntoDataList().then(function(results) {
         console.log("Import is completed. ", results);
-        console.log(" Progress ", $scope.application.importer.progress);
+        console.log(" Progress ", $scope.importer.progress);
         // $scope.$digest();
       });
     };
@@ -493,17 +580,36 @@ angular.module("fielddbAngularApp").directive("fielddbImport", function() {
     };
   };
 
-  controller.$inject = ["$scope", "$upload"];
+  controller.$inject = ["$scope", "$upload", "$rootScope"];
 
   var directiveDefinitionObject = {
     templateUrl: "views/import.html",
     restrict: "A",
     transclude: false,
-    // scope: {
-    //   importDetails: "=json"
-    // },
+    scope: {
+      importer: "=json",
+      // application: "=application"
+    },
     controller: controller,
-    link: function postLink() {},
+    link: function postLink(scope) {
+      if (!scope.importer) {
+        return;
+      }
+      if (scope.importer && scope.importer.corpus) {
+        return;
+      }
+      if (!scope.importer.corpus && scope.corpus) {
+        scope.importer.warn("The importers corpus was undefined, using the corpus in local scope, although this might have consequences.");
+        scope.importer.corpus = scope.corpus;
+        return;
+      }
+      if (!scope.importer.corpus && rootScope.corpus) {
+        scope.importer.warn("The importers corpus was undefined, using the corpus in root scope, although this might have consequences.");
+        scope.importer.corpus = rootScope.corpus;
+        return;
+      }
+
+    },
     priority: 0,
     replace: false,
     controllerAs: "stringAlias"
@@ -536,6 +642,7 @@ angular.module("fielddbAngularApp").directive("fielddbDoc", function($compile) {
     SubExperimentDataList: "<div class='well' data-fielddb-datalist json='doc' corpus='corpus' view='SubExperimentDataList'></div>",
 
     Document: "<div class='well' data-fielddb-datum json='doc' corpus='corpus'></div>",
+    DatumField: "<div class='well' data-fielddb-datum-field json='doc' corpus='corpus'></div>",
     Datum: "<div class='well' data-fielddb-datum json='doc' corpus='corpus'></div>",
     MultipleChoice: "<div data-fielddb-datum json='doc' corpus='corpus'></div>",
     Stimulus: "<div data-fielddb-datum json='doc' corpus='corpus'></div>",
@@ -602,9 +709,9 @@ angular.module("fielddbAngularApp").directive("fielddbDoc", function($compile) {
  */
 angular.module("fielddbAngularApp").directive("fielddbDatalist", function() {
 
-  var fetchDatalistDocsExponentialDecay = 2000;
 
   var controller = function($scope, $timeout) {
+    var fetchDatalistDocsExponentialDecay = 2000;
 
     // $scope.dropSuccessHandler = function($event, index, array) {
     //   // array.splice(index, 1);
@@ -640,6 +747,10 @@ angular.module("fielddbAngularApp").directive("fielddbDatalist", function() {
 
       if (!$scope.corpus || !$scope.corpus.confidential || !$scope.corpus.confidential.secretkey || !$scope.corpus.fetchCollection) {
         fetchDatalistDocsExponentialDecay = fetchDatalistDocsExponentialDecay * 2;
+        if (fetchDatalistDocsExponentialDecay >= Infinity) {
+          console.log(" Giving up on getting a real corpus. Already at " + fetchDatalistDocsExponentialDecay + ".");
+          return;
+        }
         $timeout(function() {
           if ($scope.datalist && $scope.datalist.docs && $scope.datalist.docs.length > 0) {
             return;
@@ -653,8 +764,9 @@ angular.module("fielddbAngularApp").directive("fielddbDatalist", function() {
         }
         return;
       }
-
-      $scope.corpus.authUrl = FieldDB.BASE_AUTH_URL;
+      if (FieldDB && FieldDB.Database) {
+        $scope.corpus.authUrl = FieldDB.Database.prototype.BASE_AUTH_URL;
+      }
       // $scope.corpus.debugMode = true;
 
       // console.log("fetching docs for ", $scope.corpus.toJSON());
@@ -667,8 +779,12 @@ angular.module("fielddbAngularApp").directive("fielddbDatalist", function() {
         // $scope.datalist.docs = {
         //   _collection: []
         // };
-        if (!$scope.$$phase) {
-          $scope.$digest(); //$digest or $apply
+        try {
+          if (!$scope.$$phase) {
+            $scope.$digest(); //$digest or $apply
+          }
+        } catch (e) {
+          console.log("problem running angular render", e);
         }
         return;
       }
@@ -1050,6 +1166,15 @@ angular.module("fielddbAngularApp").directive("fielddbLocales", function() {
         console.warn("locales is not available on the scope. ");
       }
     }, 1000);
+
+    $scope.persistUsersChosenLocale = function(currentLocale) {
+      $scope.locales.userOverridenLocalePreference = currentLocale;
+    };
+
+    $scope.clearLocalizerUserPreferences = function(){
+      $scope.locales.userOverridenLocalePreference = null;
+    };
+
   };
   controller.$inject = ["$scope", "$timeout"];
 
@@ -1062,9 +1187,280 @@ angular.module("fielddbAngularApp").directive("fielddbLocales", function() {
     //   locales: "=json"
     // },
     controller: controller,
-    link: function postLink() {},
+    link: function postLink(scope, element, attrs) {
+      console.log("linking locales directive", scope, element, attrs);
+      if (attrs.fielddbFullView) {
+        scope.showFullView = true;
+        scope.localeKeyToShow = "nativeName";
+      }
+      if (attrs.fielddbShowLocaleKey) {
+        scope.localeKeyToShow = attrs.fielddbShowLocaleKey;
+      } else {
+        scope.localeKeyToShow = "iso";
+      }
+
+    },
     priority: 0,
     // replace: true,
+    controllerAs: "stringAlias"
+  };
+  return directiveDefinitionObject;
+});
+
+/* globals FieldDB */
+"use strict";
+
+/**
+ * @ngdoc directive
+ * @name fielddbAngularApp.directive:fielddbAudioVideoRecorder
+ * @description
+ * # fielddbAudioVideoRecorder
+ */
+angular.module("fielddbAngularApp").directive("fielddbAudioVideoRecorder", function() {
+
+  return {
+    templateUrl: "views/audio-video-recorder.html",
+    restrict: "A",
+    transclude: false,
+    scope: {
+      parent: "=parent"
+    },
+    controller: function($scope) {
+      var debugging = true;
+      if (debugging) {
+        console.log("loading fielddbAudioVideoRecorder", $scope.parent);
+      }
+
+      if (FieldDB && FieldDB.FieldDBObject && FieldDB.FieldDBObject.application) {
+        $scope.application = FieldDB.FieldDBObject.application;
+        if (!$scope.importer) {
+          $scope.importer = new FieldDB.Import({
+            importType: "audioVideo",
+            parent: $scope.parent,
+            dbname: $scope.parent.pouchname,
+            corpus: FieldDB.FieldDBObject.application.corpus,
+            dontShowSecondStep: true
+          });
+        }
+        // $scope.importer = $scope.application.importer;
+        if ($scope.locale) {
+          /*jshint camelcase: false */
+          $scope.locale.locale_Import = "Import audio, video, images";
+        }
+
+      }
+
+      var onAudioFail = function(e) {
+        if (e === "Already running") {
+          return;
+        }
+        $scope.datum.warn("Audio peripheralsCheck failed", e);
+        if (!$scope.$$phase) {
+          $scope.$digest(); //$digest or $apply
+        }
+      };
+      var onAudioSuccess = function(s) {
+        console.log("On audio sucess ", s);
+        $scope.audioRecorder.element = $scope.audioRecorder.element || angular.element($scope.element.find("p")[0])[0];
+        $scope.audioRecorder.parent = {
+          addFile: $scope.addFile
+          // dbname: $scope.parent.pouchname
+        };
+
+        if (!$scope.$$phase) {
+          $scope.$digest(); //$digest or $apply
+        }
+      };
+
+      $scope.peripheralsCheck = function(type) {
+        if (!$scope.audioRecorder && FieldDB) {
+          $scope.audioRecorder = new FieldDB.AudioVideoRecorder({});
+        }
+        if (type === "video") {
+          type = true;
+          $scope.mutedAudioInstructions = true;
+        } else if (type === "picture") {
+          type = true;
+          $scope.showPictureInstructions = true;
+        } else {
+          type = false;
+          $scope.mutedAudioInstructions = true;
+        }
+        $scope.audioRecorder.peripheralsCheck(type, {
+          image: $scope.element.find("img")[1],
+          audio: $scope.element.find("audio")[0],
+          video: $scope.element.find("video")[0],
+          canvas: $scope.element.find("canvas")[0]
+        }).then(onAudioSuccess, onAudioFail);
+      };
+
+      /* hack for add file since spreadsheet datum dont have addFile function */
+      $scope.addFile = function(newAudioFile) {
+        $scope.parent.audioVideo = $scope.parent.audioVideo || [];
+        $scope.parent.images = $scope.parent.images || [];
+        $scope.parent.relatedData = $scope.parent.relatedData || [];
+        $scope.parent.markAsNeedsToBeSaved();
+        if (!newAudioFile.filename) {
+          console.warn("Filename not specified.");
+          return;
+        }
+        newAudioFile.dbname = $scope.parent.pouchname;
+        if (FieldDB && FieldDB.AudioVideo) {
+          var audioVideoImageOrOtherFile = new FieldDB.AudioVideo(newAudioFile).toJSON();
+          delete audioVideoImageOrOtherFile.data;
+        }
+        if (FieldDB && FieldDB.FieldDBObject && FieldDB.FieldDBObject.application && FieldDB.FieldDBObject.application.corpus) {
+          $scope.importer.corpus = FieldDB.FieldDBObject.application.corpus;
+          $scope.importer.uploadFiles(newAudioFile.data).then(function() {
+            $scope.parent.render();
+          }, function(error) {
+            console.log(error);
+            $scope.parent.render();
+          });
+        }
+
+        // if (audioVideoImageOrOtherFile.type.indexOf("audio") === 0) {
+        //   $scope.parent.audioVideo.add(audioVideoImageOrOtherFile);
+        // } else if (audioVideoImageOrOtherFile.type.indexOf("video") === 0) {
+        //   $scope.parent.audioVideo.add(audioVideoImageOrOtherFile);
+        // } else if (audioVideoImageOrOtherFile.type.indexOf("images") === 0) {
+        //   $scope.parent.images.push(audioVideoImageOrOtherFile);
+        // } else {
+        //   $scope.parent.relatedData.push(audioVideoImageOrOtherFile);
+        // }
+
+        // i
+      };
+
+    },
+    link: function postLink(scope, el) {
+      console.log("keeping a reference to this element");
+      scope.element = el;
+      // if (FieldDB && FieldDB.AudioVideoRecorder && FieldDB.AudioVideoRecorder.Recorder) {
+      //   FieldDB.AudioVideoRecorder.Recorder.initRecorder();
+      // }
+    }
+  };
+});
+
+"use strict";
+
+/**
+ * @ngdoc directive
+ * @name fielddbAngularApp.directive:fielddbDatumField
+ * @description
+ * # fielddbDatumField
+ */
+
+angular.module("fielddbAngularApp").directive("fielddbDatumField", function() {
+
+  var directiveDefinitionObject = {
+    templateUrl: "views/datum-field.html", // or // function(tElement, tAttrs) { ... },
+    restrict: "A",
+    transclude: false,
+    scope: {
+      datumField: "=json"
+    },
+    // controller: function($scope, $element, $attrs, $transclude, otherInjectables) {
+    // controller: function($scope, $element, $attrs, $transclude) {
+    //   console.log("in controller");
+    //   console.log($element.html());
+    // },
+    link: function postLink(scope) {
+      console.log("linking datumfield", scope.datumField, scope.contextualizer);
+      scope.contextualize = scope.$root.contextualize;
+    },
+    priority: 0,
+    replace: false,
+    controllerAs: "stringAlias"
+    // require: "siblingDirectiveName", // or // ["^parentDirectiveName", "?optionalDirectiveName", "?^optionalParent"],
+    // compile: function compile(tElement, tAttrs, transclude) {
+    //   return {
+    //     pre: function preLink(scope, iElement, iAttrs, controller) {
+    //       console.log("in preLink");
+    //     },
+    //     post: function postLink(scope, iElement, iAttrs, controller) {
+    //       console.log("in postLink");
+    //       console.log(iElement.html());
+    //       iElement.text("this is the datumField directive");
+    //     }
+    //   }
+    //   // or
+    //   // return function postLink( ... ) { ... }
+    // }
+  };
+  return directiveDefinitionObject;
+});
+
+"use strict";
+
+/**
+ * @ngdoc directive
+ * @name fielddbAngularApp.directive:fielddbCollection
+ * @description
+ * # fielddbCollection
+ */
+angular.module("fielddbAngularApp").directive("fielddbCollection", function() {
+
+
+  var controller = function($scope) {
+    // $scope.dropSuccessHandler = function($event, index, array) {
+    //   // array.splice(index, 1);
+    //   // $scope.orphanedItem =
+    //   console.log("removing " + index);
+    // };
+
+    $scope.onDrop = function($event, $data, index) {
+      console.log("inserting at " + index, $data);
+      if ($scope.collection && $scope.collection) {
+        if ($scope.collection.find($data).length === 0) {
+          $scope.collection.add($data);
+        }
+        $scope.collection.reorder($data, index);
+      }
+    };
+
+    $scope.removeItemFromList = function(item) {
+      if ($scope.collection && $scope.collection) {
+        $scope.collection.remove(item);
+      }
+    };
+
+    $scope.save = function() {
+      $scope.collection.save().then(function() {
+        if (!$scope.$$phase) {
+          $scope.$digest(); //$digest or $apply
+        }
+      });
+    };
+    $scope.undo = function() {
+      var type = $scope.collection.fieldDBtype;
+      if (!type || !FieldDB[type]) {
+        type = "Collection";
+      }
+      console.log("TODO add undo functionality");
+    };
+
+    $scope.canAddNewItemsToCollection = function() {
+      return false;
+    };
+
+  };
+  controller.$inject = ["$scope", "$timeout"];
+
+  var directiveDefinitionObject = {
+    templateUrl: function() {
+      return "views/collection.html";
+    },
+    restrict: "A",
+    transclude: false,
+    scope: {
+      collection: "=json"
+    },
+    controller: controller,
+    link: function postLink() {},
+    priority: 0,
+    replace: false,
     controllerAs: "stringAlias"
   };
   return directiveDefinitionObject;

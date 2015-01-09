@@ -1,5 +1,5 @@
 /*!
- * jQuery JavaScript Library v2.1.1
+ * jQuery JavaScript Library v2.1.3
  * http://jquery.com/
  *
  * Includes Sizzle.js
@@ -9,19 +9,19 @@
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2014-05-01T17:11Z
+ * Date: 2014-12-18T15:11Z
  */
 
 (function( global, factory ) {
 
 	if ( typeof module === "object" && typeof module.exports === "object" ) {
-		// For CommonJS and CommonJS-like environments where a proper window is present,
-		// execute the factory and get jQuery
-		// For environments that do not inherently posses a window with a document
-		// (such as Node.js), expose a jQuery-making factory as module.exports
-		// This accentuates the need for the creation of a real window
+		// For CommonJS and CommonJS-like environments where a proper `window`
+		// is present, execute the factory and get jQuery.
+		// For environments that do not have a `window` with a `document`
+		// (such as Node.js), expose a factory as module.exports.
+		// This accentuates the need for the creation of a real `window`.
 		// e.g. var jQuery = require("jquery")(window);
-		// See ticket #14549 for more info
+		// See ticket #14549 for more info.
 		module.exports = global.document ?
 			factory( global, true ) :
 			function( w ) {
@@ -37,10 +37,10 @@
 // Pass this if window is not defined yet
 }(typeof window !== "undefined" ? window : this, function( window, noGlobal ) {
 
-// Can't do this because several apps including ASP.NET trace
+// Support: Firefox 18+
+// Can't be in strict mode, several libs including ASP.NET trace
 // the stack via arguments.caller.callee and Firefox dies if
 // you try to trace through "use strict" call chains. (#13335)
-// Support: Firefox 18+
 //
 
 var arr = [];
@@ -67,7 +67,7 @@ var
 	// Use the correct document accordingly with window argument (sandbox)
 	document = window.document,
 
-	version = "2.1.1",
+	version = "2.1.3",
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -185,7 +185,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 	if ( typeof target === "boolean" ) {
 		deep = target;
 
-		// skip the boolean and the target
+		// Skip the boolean and the target
 		target = arguments[ i ] || {};
 		i++;
 	}
@@ -195,7 +195,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 		target = {};
 	}
 
-	// extend jQuery itself if only one argument is passed
+	// Extend jQuery itself if only one argument is passed
 	if ( i === length ) {
 		target = this;
 		i--;
@@ -252,9 +252,6 @@ jQuery.extend({
 
 	noop: function() {},
 
-	// See test/unit/core.js for details concerning isFunction.
-	// Since version 1.3, DOM methods and functions like alert
-	// aren't supported. They return false on IE (#2968).
 	isFunction: function( obj ) {
 		return jQuery.type(obj) === "function";
 	},
@@ -269,7 +266,8 @@ jQuery.extend({
 		// parseFloat NaNs numeric-cast false positives (null|true|false|"")
 		// ...but misinterprets leading-number strings, particularly hex literals ("0x...")
 		// subtraction forces infinities to NaN
-		return !jQuery.isArray( obj ) && obj - parseFloat( obj ) >= 0;
+		// adding 1 corrects loss of precision from parseFloat (#15100)
+		return !jQuery.isArray( obj ) && (obj - parseFloat( obj ) + 1) >= 0;
 	},
 
 	isPlainObject: function( obj ) {
@@ -303,7 +301,7 @@ jQuery.extend({
 		if ( obj == null ) {
 			return obj + "";
 		}
-		// Support: Android < 4.0, iOS < 6 (functionish RegExp)
+		// Support: Android<4.0, iOS<6 (functionish RegExp)
 		return typeof obj === "object" || typeof obj === "function" ?
 			class2type[ toString.call(obj) ] || "object" :
 			typeof obj;
@@ -333,6 +331,7 @@ jQuery.extend({
 	},
 
 	// Convert dashed to camelCase; used by the css and data modules
+	// Support: IE9-11+
 	// Microsoft forgot to hump their vendor prefix (#9572)
 	camelCase: function( string ) {
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
@@ -548,14 +547,14 @@ function isArraylike( obj ) {
 }
 var Sizzle =
 /*!
- * Sizzle CSS Selector Engine v1.10.19
+ * Sizzle CSS Selector Engine v2.2.0-pre
  * http://sizzlejs.com/
  *
- * Copyright 2013 jQuery Foundation, Inc. and other contributors
+ * Copyright 2008, 2014 jQuery Foundation, Inc. and other contributors
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2014-04-18
+ * Date: 2014-12-16
  */
 (function( window ) {
 
@@ -582,7 +581,7 @@ var i,
 	contains,
 
 	// Instance-specific data
-	expando = "sizzle" + -(new Date()),
+	expando = "sizzle" + 1 * new Date(),
 	preferredDoc = window.document,
 	dirruns = 0,
 	done = 0,
@@ -597,7 +596,6 @@ var i,
 	},
 
 	// General-purpose constants
-	strundefined = typeof undefined,
 	MAX_NEGATIVE = 1 << 31,
 
 	// Instance methods
@@ -607,12 +605,13 @@ var i,
 	push_native = arr.push,
 	push = arr.push,
 	slice = arr.slice,
-	// Use a stripped-down indexOf if we can't use a native one
-	indexOf = arr.indexOf || function( elem ) {
+	// Use a stripped-down indexOf as it's faster than native
+	// http://jsperf.com/thor-indexof-vs-for/5
+	indexOf = function( list, elem ) {
 		var i = 0,
-			len = this.length;
+			len = list.length;
 		for ( ; i < len; i++ ) {
-			if ( this[i] === elem ) {
+			if ( list[i] === elem ) {
 				return i;
 			}
 		}
@@ -652,6 +651,7 @@ var i,
 		")\\)|)",
 
 	// Leading and non-escaped trailing whitespace, capturing some non-whitespace characters preceding the latter
+	rwhitespace = new RegExp( whitespace + "+", "g" ),
 	rtrim = new RegExp( "^" + whitespace + "+|((?:^|[^\\\\])(?:\\\\.)*)" + whitespace + "+$", "g" ),
 
 	rcomma = new RegExp( "^" + whitespace + "*," + whitespace + "*" ),
@@ -703,6 +703,14 @@ var i,
 				String.fromCharCode( high + 0x10000 ) :
 				// Supplemental Plane codepoint (surrogate pair)
 				String.fromCharCode( high >> 10 | 0xD800, high & 0x3FF | 0xDC00 );
+	},
+
+	// Used for iframes
+	// See setDocument()
+	// Removing the function wrapper causes a "Permission Denied"
+	// error in IE
+	unloadHandler = function() {
+		setDocument();
 	};
 
 // Optimize for push.apply( _, NodeList )
@@ -745,19 +753,18 @@ function Sizzle( selector, context, results, seed ) {
 
 	context = context || document;
 	results = results || [];
+	nodeType = context.nodeType;
 
-	if ( !selector || typeof selector !== "string" ) {
+	if ( typeof selector !== "string" || !selector ||
+		nodeType !== 1 && nodeType !== 9 && nodeType !== 11 ) {
+
 		return results;
 	}
 
-	if ( (nodeType = context.nodeType) !== 1 && nodeType !== 9 ) {
-		return [];
-	}
+	if ( !seed && documentIsHTML ) {
 
-	if ( documentIsHTML && !seed ) {
-
-		// Shortcuts
-		if ( (match = rquickExpr.exec( selector )) ) {
+		// Try to shortcut find operations when possible (e.g., not under DocumentFragment)
+		if ( nodeType !== 11 && (match = rquickExpr.exec( selector )) ) {
 			// Speed-up: Sizzle("#ID")
 			if ( (m = match[1]) ) {
 				if ( nodeType === 9 ) {
@@ -789,7 +796,7 @@ function Sizzle( selector, context, results, seed ) {
 				return results;
 
 			// Speed-up: Sizzle(".CLASS")
-			} else if ( (m = match[3]) && support.getElementsByClassName && context.getElementsByClassName ) {
+			} else if ( (m = match[3]) && support.getElementsByClassName ) {
 				push.apply( results, context.getElementsByClassName( m ) );
 				return results;
 			}
@@ -799,7 +806,7 @@ function Sizzle( selector, context, results, seed ) {
 		if ( support.qsa && (!rbuggyQSA || !rbuggyQSA.test( selector )) ) {
 			nid = old = expando;
 			newContext = context;
-			newSelector = nodeType === 9 && selector;
+			newSelector = nodeType !== 1 && selector;
 
 			// qSA works strangely on Element-rooted queries
 			// We can work around this by specifying an extra ID on the root
@@ -986,7 +993,7 @@ function createPositionalPseudo( fn ) {
  * @returns {Element|Object|Boolean} The input node if acceptable, otherwise a falsy value
  */
 function testContext( context ) {
-	return context && typeof context.getElementsByTagName !== strundefined && context;
+	return context && typeof context.getElementsByTagName !== "undefined" && context;
 }
 
 // Expose support vars for convenience
@@ -1010,9 +1017,8 @@ isXML = Sizzle.isXML = function( elem ) {
  * @returns {Object} Returns the current document
  */
 setDocument = Sizzle.setDocument = function( node ) {
-	var hasCompare,
-		doc = node ? node.ownerDocument || node : preferredDoc,
-		parent = doc.defaultView;
+	var hasCompare, parent,
+		doc = node ? node.ownerDocument || node : preferredDoc;
 
 	// If no document and documentElement is available, return
 	if ( doc === document || doc.nodeType !== 9 || !doc.documentElement ) {
@@ -1022,9 +1028,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 	// Set our document
 	document = doc;
 	docElem = doc.documentElement;
-
-	// Support tests
-	documentIsHTML = !isXML( doc );
+	parent = doc.defaultView;
 
 	// Support: IE>8
 	// If iframe document is assigned to "document" variable and if iframe has been reloaded,
@@ -1033,21 +1037,22 @@ setDocument = Sizzle.setDocument = function( node ) {
 	if ( parent && parent !== parent.top ) {
 		// IE11 does not have attachEvent, so all must suffer
 		if ( parent.addEventListener ) {
-			parent.addEventListener( "unload", function() {
-				setDocument();
-			}, false );
+			parent.addEventListener( "unload", unloadHandler, false );
 		} else if ( parent.attachEvent ) {
-			parent.attachEvent( "onunload", function() {
-				setDocument();
-			});
+			parent.attachEvent( "onunload", unloadHandler );
 		}
 	}
+
+	/* Support tests
+	---------------------------------------------------------------------- */
+	documentIsHTML = !isXML( doc );
 
 	/* Attributes
 	---------------------------------------------------------------------- */
 
 	// Support: IE<8
-	// Verify that getAttribute really returns attributes and not properties (excepting IE8 booleans)
+	// Verify that getAttribute really returns attributes and not properties
+	// (excepting IE8 booleans)
 	support.attributes = assert(function( div ) {
 		div.className = "i";
 		return !div.getAttribute("className");
@@ -1062,17 +1067,8 @@ setDocument = Sizzle.setDocument = function( node ) {
 		return !div.getElementsByTagName("*").length;
 	});
 
-	// Check if getElementsByClassName can be trusted
-	support.getElementsByClassName = rnative.test( doc.getElementsByClassName ) && assert(function( div ) {
-		div.innerHTML = "<div class='a'></div><div class='a i'></div>";
-
-		// Support: Safari<4
-		// Catch class over-caching
-		div.firstChild.className = "i";
-		// Support: Opera<10
-		// Catch gEBCN failure to find non-leading classes
-		return div.getElementsByClassName("i").length === 2;
-	});
+	// Support: IE<9
+	support.getElementsByClassName = rnative.test( doc.getElementsByClassName );
 
 	// Support: IE<10
 	// Check if getElementById returns elements by name
@@ -1086,7 +1082,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 	// ID find and filter
 	if ( support.getById ) {
 		Expr.find["ID"] = function( id, context ) {
-			if ( typeof context.getElementById !== strundefined && documentIsHTML ) {
+			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
 				var m = context.getElementById( id );
 				// Check parentNode to catch when Blackberry 4.6 returns
 				// nodes that are no longer in the document #6963
@@ -1107,7 +1103,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 		Expr.filter["ID"] =  function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
-				var node = typeof elem.getAttributeNode !== strundefined && elem.getAttributeNode("id");
+				var node = typeof elem.getAttributeNode !== "undefined" && elem.getAttributeNode("id");
 				return node && node.value === attrId;
 			};
 		};
@@ -1116,14 +1112,20 @@ setDocument = Sizzle.setDocument = function( node ) {
 	// Tag
 	Expr.find["TAG"] = support.getElementsByTagName ?
 		function( tag, context ) {
-			if ( typeof context.getElementsByTagName !== strundefined ) {
+			if ( typeof context.getElementsByTagName !== "undefined" ) {
 				return context.getElementsByTagName( tag );
+
+			// DocumentFragment nodes don't have gEBTN
+			} else if ( support.qsa ) {
+				return context.querySelectorAll( tag );
 			}
 		} :
+
 		function( tag, context ) {
 			var elem,
 				tmp = [],
 				i = 0,
+				// By happy coincidence, a (broken) gEBTN appears on DocumentFragment nodes too
 				results = context.getElementsByTagName( tag );
 
 			// Filter out possible comments
@@ -1141,7 +1143,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 	// Class
 	Expr.find["CLASS"] = support.getElementsByClassName && function( className, context ) {
-		if ( typeof context.getElementsByClassName !== strundefined && documentIsHTML ) {
+		if ( documentIsHTML ) {
 			return context.getElementsByClassName( className );
 		}
 	};
@@ -1170,13 +1172,15 @@ setDocument = Sizzle.setDocument = function( node ) {
 			// setting a boolean content attribute,
 			// since its presence should be enough
 			// http://bugs.jquery.com/ticket/12359
-			div.innerHTML = "<select msallowclip=''><option selected=''></option></select>";
+			docElem.appendChild( div ).innerHTML = "<a id='" + expando + "'></a>" +
+				"<select id='" + expando + "-\f]' msallowcapture=''>" +
+				"<option selected=''></option></select>";
 
 			// Support: IE8, Opera 11-12.16
 			// Nothing should be selected when empty strings follow ^= or $= or *=
 			// The test attribute must be unknown in Opera but "safe" for WinRT
 			// http://msdn.microsoft.com/en-us/library/ie/hh465388.aspx#attribute_section
-			if ( div.querySelectorAll("[msallowclip^='']").length ) {
+			if ( div.querySelectorAll("[msallowcapture^='']").length ) {
 				rbuggyQSA.push( "[*^$]=" + whitespace + "*(?:''|\"\")" );
 			}
 
@@ -1186,11 +1190,23 @@ setDocument = Sizzle.setDocument = function( node ) {
 				rbuggyQSA.push( "\\[" + whitespace + "*(?:value|" + booleans + ")" );
 			}
 
+			// Support: Chrome<29, Android<4.2+, Safari<7.0+, iOS<7.0+, PhantomJS<1.9.7+
+			if ( !div.querySelectorAll( "[id~=" + expando + "-]" ).length ) {
+				rbuggyQSA.push("~=");
+			}
+
 			// Webkit/Opera - :checked should return selected option elements
 			// http://www.w3.org/TR/2011/REC-css3-selectors-20110929/#checked
 			// IE8 throws error here and will not see later tests
 			if ( !div.querySelectorAll(":checked").length ) {
 				rbuggyQSA.push(":checked");
+			}
+
+			// Support: Safari 8+, iOS 8+
+			// https://bugs.webkit.org/show_bug.cgi?id=136851
+			// In-page `selector#id sibing-combinator selector` fails
+			if ( !div.querySelectorAll( "a#" + expando + "+*" ).length ) {
+				rbuggyQSA.push(".#.+[+~]");
 			}
 		});
 
@@ -1308,7 +1324,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 			// Maintain original order
 			return sortInput ?
-				( indexOf.call( sortInput, a ) - indexOf.call( sortInput, b ) ) :
+				( indexOf( sortInput, a ) - indexOf( sortInput, b ) ) :
 				0;
 		}
 
@@ -1335,7 +1351,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 				aup ? -1 :
 				bup ? 1 :
 				sortInput ?
-				( indexOf.call( sortInput, a ) - indexOf.call( sortInput, b ) ) :
+				( indexOf( sortInput, a ) - indexOf( sortInput, b ) ) :
 				0;
 
 		// If the nodes are siblings, we can do a quick check
@@ -1398,7 +1414,7 @@ Sizzle.matchesSelector = function( elem, expr ) {
 					elem.document && elem.document.nodeType !== 11 ) {
 				return ret;
 			}
-		} catch(e) {}
+		} catch (e) {}
 	}
 
 	return Sizzle( expr, document, null, [ elem ] ).length > 0;
@@ -1617,7 +1633,7 @@ Expr = Sizzle.selectors = {
 			return pattern ||
 				(pattern = new RegExp( "(^|" + whitespace + ")" + className + "(" + whitespace + "|$)" )) &&
 				classCache( className, function( elem ) {
-					return pattern.test( typeof elem.className === "string" && elem.className || typeof elem.getAttribute !== strundefined && elem.getAttribute("class") || "" );
+					return pattern.test( typeof elem.className === "string" && elem.className || typeof elem.getAttribute !== "undefined" && elem.getAttribute("class") || "" );
 				});
 		},
 
@@ -1639,7 +1655,7 @@ Expr = Sizzle.selectors = {
 					operator === "^=" ? check && result.indexOf( check ) === 0 :
 					operator === "*=" ? check && result.indexOf( check ) > -1 :
 					operator === "$=" ? check && result.slice( -check.length ) === check :
-					operator === "~=" ? ( " " + result + " " ).indexOf( check ) > -1 :
+					operator === "~=" ? ( " " + result.replace( rwhitespace, " " ) + " " ).indexOf( check ) > -1 :
 					operator === "|=" ? result === check || result.slice( 0, check.length + 1 ) === check + "-" :
 					false;
 			};
@@ -1759,7 +1775,7 @@ Expr = Sizzle.selectors = {
 							matched = fn( seed, argument ),
 							i = matched.length;
 						while ( i-- ) {
-							idx = indexOf.call( seed, matched[i] );
+							idx = indexOf( seed, matched[i] );
 							seed[ idx ] = !( matches[ idx ] = matched[i] );
 						}
 					}) :
@@ -1798,6 +1814,8 @@ Expr = Sizzle.selectors = {
 				function( elem, context, xml ) {
 					input[0] = elem;
 					matcher( input, null, xml, results );
+					// Don't keep the element (issue #299)
+					input[0] = null;
 					return !results.pop();
 				};
 		}),
@@ -1809,6 +1827,7 @@ Expr = Sizzle.selectors = {
 		}),
 
 		"contains": markFunction(function( text ) {
+			text = text.replace( runescape, funescape );
 			return function( elem ) {
 				return ( elem.textContent || elem.innerText || getText( elem ) ).indexOf( text ) > -1;
 			};
@@ -2230,7 +2249,7 @@ function setMatcher( preFilter, selector, matcher, postFilter, postFinder, postS
 				i = matcherOut.length;
 				while ( i-- ) {
 					if ( (elem = matcherOut[i]) &&
-						(temp = postFinder ? indexOf.call( seed, elem ) : preMap[i]) > -1 ) {
+						(temp = postFinder ? indexOf( seed, elem ) : preMap[i]) > -1 ) {
 
 						seed[temp] = !(results[temp] = elem);
 					}
@@ -2265,13 +2284,16 @@ function matcherFromTokens( tokens ) {
 			return elem === checkContext;
 		}, implicitRelative, true ),
 		matchAnyContext = addCombinator( function( elem ) {
-			return indexOf.call( checkContext, elem ) > -1;
+			return indexOf( checkContext, elem ) > -1;
 		}, implicitRelative, true ),
 		matchers = [ function( elem, context, xml ) {
-			return ( !leadingRelative && ( xml || context !== outermostContext ) ) || (
+			var ret = ( !leadingRelative && ( xml || context !== outermostContext ) ) || (
 				(checkContext = context).nodeType ?
 					matchContext( elem, context, xml ) :
 					matchAnyContext( elem, context, xml ) );
+			// Avoid hanging onto element (issue #299)
+			checkContext = null;
+			return ret;
 		} ];
 
 	for ( ; i < len; i++ ) {
@@ -2521,7 +2543,7 @@ select = Sizzle.select = function( selector, context, results, seed ) {
 // Sort stability
 support.sortStable = expando.split("").sort( sortOrder ).join("") === expando;
 
-// Support: Chrome<14
+// Support: Chrome 14-35+
 // Always assume duplicates if they aren't passed to the comparison function
 support.detectDuplicates = !!hasDuplicate;
 
@@ -2730,7 +2752,7 @@ var rootjQuery,
 				if ( match[1] ) {
 					context = context instanceof jQuery ? context[0] : context;
 
-					// scripts is true for back-compat
+					// Option to run scripts is true for back-compat
 					// Intentionally let the error be thrown if parseHTML is not present
 					jQuery.merge( this, jQuery.parseHTML(
 						match[1],
@@ -2758,8 +2780,8 @@ var rootjQuery,
 				} else {
 					elem = document.getElementById( match[2] );
 
-					// Check parentNode to catch when Blackberry 4.6 returns
-					// nodes that are no longer in the document #6963
+					// Support: Blackberry 4.6
+					// gEBID returns nodes no longer in the document (#6963)
 					if ( elem && elem.parentNode ) {
 						// Inject the element directly into the jQuery object
 						this.length = 1;
@@ -2812,7 +2834,7 @@ rootjQuery = jQuery( document );
 
 
 var rparentsprev = /^(?:parents|prev(?:Until|All))/,
-	// methods guaranteed to produce a unique set when starting from a unique set
+	// Methods guaranteed to produce a unique set when starting from a unique set
 	guaranteedUnique = {
 		children: true,
 		contents: true,
@@ -2892,8 +2914,7 @@ jQuery.fn.extend({
 		return this.pushStack( matched.length > 1 ? jQuery.unique( matched ) : matched );
 	},
 
-	// Determine the position of an element within
-	// the matched set of elements
+	// Determine the position of an element within the set
 	index: function( elem ) {
 
 		// No argument, return index in parent
@@ -2901,7 +2922,7 @@ jQuery.fn.extend({
 			return ( this[ 0 ] && this[ 0 ].parentNode ) ? this.first().prevAll().length : -1;
 		}
 
-		// index in selector
+		// Index in selector
 		if ( typeof elem === "string" ) {
 			return indexOf.call( jQuery( elem ), this[ 0 ] );
 		}
@@ -3317,7 +3338,7 @@ jQuery.extend({
 
 			progressValues, progressContexts, resolveContexts;
 
-		// add listeners to Deferred subordinates; treat others as resolved
+		// Add listeners to Deferred subordinates; treat others as resolved
 		if ( length > 1 ) {
 			progressValues = new Array( length );
 			progressContexts = new Array( length );
@@ -3334,7 +3355,7 @@ jQuery.extend({
 			}
 		}
 
-		// if we're not waiting on anything, resolve the master
+		// If we're not waiting on anything, resolve the master
 		if ( !remaining ) {
 			deferred.resolveWith( resolveContexts, resolveValues );
 		}
@@ -3413,7 +3434,7 @@ jQuery.ready.promise = function( obj ) {
 		readyList = jQuery.Deferred();
 
 		// Catch cases where $(document).ready() is called after the browser event has already occurred.
-		// we once tried to use readyState "interactive" here, but it caused issues like the one
+		// We once tried to use readyState "interactive" here, but it caused issues like the one
 		// discovered by ChrisS here: http://bugs.jquery.com/ticket/12282#comment:15
 		if ( document.readyState === "complete" ) {
 			// Handle it asynchronously to allow scripts the opportunity to delay ready
@@ -3507,7 +3528,7 @@ jQuery.acceptData = function( owner ) {
 
 
 function Data() {
-	// Support: Android < 4,
+	// Support: Android<4,
 	// Old WebKit does not have Object.preventExtensions/freeze method,
 	// return new empty object instead with no [[set]] accessor
 	Object.defineProperty( this.cache = {}, 0, {
@@ -3516,7 +3537,7 @@ function Data() {
 		}
 	});
 
-	this.expando = jQuery.expando + Math.random();
+	this.expando = jQuery.expando + Data.uid++;
 }
 
 Data.uid = 1;
@@ -3544,7 +3565,7 @@ Data.prototype = {
 				descriptor[ this.expando ] = { value: unlock };
 				Object.defineProperties( owner, descriptor );
 
-			// Support: Android < 4
+			// Support: Android<4
 			// Fallback to a less secure definition
 			} catch ( e ) {
 				descriptor[ this.expando ] = unlock;
@@ -3684,17 +3705,16 @@ var data_user = new Data();
 
 
 
-/*
-	Implementation Summary
+//	Implementation Summary
+//
+//	1. Enforce API surface and semantic compatibility with 1.9.x branch
+//	2. Improve the module's maintainability by reducing the storage
+//		paths to a single mechanism.
+//	3. Use the same single mechanism to support "private" and "user" data.
+//	4. _Never_ expose "private" data to user code (TODO: Drop _data, _removeData)
+//	5. Avoid exposing implementation details on user objects (eg. expando properties)
+//	6. Provide a clear path for implementation upgrade to WeakMap in 2014
 
-	1. Enforce API surface and semantic compatibility with 1.9.x branch
-	2. Improve the module's maintainability by reducing the storage
-		paths to a single mechanism.
-	3. Use the same single mechanism to support "private" and "user" data.
-	4. _Never_ expose "private" data to user code (TODO: Drop _data, _removeData)
-	5. Avoid exposing implementation details on user objects (eg. expando properties)
-	6. Provide a clear path for implementation upgrade to WeakMap in 2014
-*/
 var rbrace = /^(?:\{[\w\W]*\}|\[[\w\W]*\])$/,
 	rmultiDash = /([A-Z])/g;
 
@@ -3899,7 +3919,7 @@ jQuery.extend({
 				queue.unshift( "inprogress" );
 			}
 
-			// clear up the last queue stop function
+			// Clear up the last queue stop function
 			delete hooks.stop;
 			fn.call( elem, next, hooks );
 		}
@@ -3909,7 +3929,7 @@ jQuery.extend({
 		}
 	},
 
-	// not intended for public consumption - generates a queueHooks object, or returns the current one
+	// Not public - generate a queueHooks object, or return the current one
 	_queueHooks: function( elem, type ) {
 		var key = type + "queueHooks";
 		return data_priv.get( elem, key ) || data_priv.access( elem, key, {
@@ -3939,7 +3959,7 @@ jQuery.fn.extend({
 			this.each(function() {
 				var queue = jQuery.queue( this, type, data );
 
-				// ensure a hooks for this queue
+				// Ensure a hooks for this queue
 				jQuery._queueHooks( this, type );
 
 				if ( type === "fx" && queue[0] !== "inprogress" ) {
@@ -4006,21 +4026,22 @@ var rcheckableType = (/^(?:checkbox|radio)$/i);
 		div = fragment.appendChild( document.createElement( "div" ) ),
 		input = document.createElement( "input" );
 
-	// #11217 - WebKit loses check when the name is after the checked attribute
+	// Support: Safari<=5.1
+	// Check state lost if the name is set (#11217)
 	// Support: Windows Web Apps (WWA)
-	// `name` and `type` need .setAttribute for WWA
+	// `name` and `type` must use .setAttribute for WWA (#14901)
 	input.setAttribute( "type", "radio" );
 	input.setAttribute( "checked", "checked" );
 	input.setAttribute( "name", "t" );
 
 	div.appendChild( input );
 
-	// Support: Safari 5.1, iOS 5.1, Android 4.x, Android 2.3
-	// old WebKit doesn't clone checked state correctly in fragments
+	// Support: Safari<=5.1, Android<4.2
+	// Older WebKit doesn't clone checked state correctly in fragments
 	support.checkClone = div.cloneNode( true ).cloneNode( true ).lastChild.checked;
 
+	// Support: IE<=11+
 	// Make sure textarea (and checkbox) defaultValue is properly cloned
-	// Support: IE9-IE11+
 	div.innerHTML = "<textarea>x</textarea>";
 	support.noCloneChecked = !!div.cloneNode( true ).lastChild.defaultValue;
 })();
@@ -4398,8 +4419,8 @@ jQuery.event = {
 			j = 0;
 			while ( (handleObj = matched.handlers[ j++ ]) && !event.isImmediatePropagationStopped() ) {
 
-				// Triggered event must either 1) have no namespace, or
-				// 2) have namespace(s) a subset or equal to those in the bound event (both can have no namespace).
+				// Triggered event must either 1) have no namespace, or 2) have namespace(s)
+				// a subset or equal to those in the bound event (both can have no namespace).
 				if ( !event.namespace_re || event.namespace_re.test( handleObj.namespace ) ) {
 
 					event.handleObj = handleObj;
@@ -4549,7 +4570,7 @@ jQuery.event = {
 			event.target = document;
 		}
 
-		// Support: Safari 6.0+, Chrome < 28
+		// Support: Safari 6.0+, Chrome<28
 		// Target should not be a text node (#504, #13143)
 		if ( event.target.nodeType === 3 ) {
 			event.target = event.target.parentNode;
@@ -4654,7 +4675,7 @@ jQuery.Event = function( src, props ) {
 		// by a handler lower down the tree; reflect the correct value.
 		this.isDefaultPrevented = src.defaultPrevented ||
 				src.defaultPrevented === undefined &&
-				// Support: Android < 4.0
+				// Support: Android<4.0
 				src.returnValue === false ?
 			returnTrue :
 			returnFalse;
@@ -4744,8 +4765,8 @@ jQuery.each({
 	};
 });
 
-// Create "bubbling" focus and blur events
 // Support: Firefox, Chrome, Safari
+// Create "bubbling" focus and blur events
 if ( !support.focusinBubbles ) {
 	jQuery.each({ focus: "focusin", blur: "focusout" }, function( orig, fix ) {
 
@@ -4898,7 +4919,7 @@ var
 	// We have to close these tags to support XHTML (#13200)
 	wrapMap = {
 
-		// Support: IE 9
+		// Support: IE9
 		option: [ 1, "<select multiple='multiple'>", "</select>" ],
 
 		thead: [ 1, "<table>", "</table>" ],
@@ -4909,7 +4930,7 @@ var
 		_default: [ 0, "", "" ]
 	};
 
-// Support: IE 9
+// Support: IE9
 wrapMap.optgroup = wrapMap.option;
 
 wrapMap.tbody = wrapMap.tfoot = wrapMap.colgroup = wrapMap.caption = wrapMap.thead;
@@ -4999,7 +5020,7 @@ function getAll( context, tag ) {
 		ret;
 }
 
-// Support: IE >= 9
+// Fix IE bugs, see support tests
 function fixInput( src, dest ) {
 	var nodeName = dest.nodeName.toLowerCase();
 
@@ -5019,8 +5040,7 @@ jQuery.extend({
 			clone = elem.cloneNode( true ),
 			inPage = jQuery.contains( elem.ownerDocument, elem );
 
-		// Support: IE >= 9
-		// Fix Cloning issues
+		// Fix IE cloning issues
 		if ( !support.noCloneChecked && ( elem.nodeType === 1 || elem.nodeType === 11 ) &&
 				!jQuery.isXMLDoc( elem ) ) {
 
@@ -5071,8 +5091,8 @@ jQuery.extend({
 
 				// Add nodes directly
 				if ( jQuery.type( elem ) === "object" ) {
-					// Support: QtWebKit
-					// jQuery.merge because push.apply(_, arraylike) throws
+					// Support: QtWebKit, PhantomJS
+					// push.apply(_, arraylike) throws on ancient WebKit
 					jQuery.merge( nodes, elem.nodeType ? [ elem ] : elem );
 
 				// Convert non-html into a text node
@@ -5094,15 +5114,14 @@ jQuery.extend({
 						tmp = tmp.lastChild;
 					}
 
-					// Support: QtWebKit
-					// jQuery.merge because push.apply(_, arraylike) throws
+					// Support: QtWebKit, PhantomJS
+					// push.apply(_, arraylike) throws on ancient WebKit
 					jQuery.merge( nodes, tmp.childNodes );
 
 					// Remember the top-level container
 					tmp = fragment.firstChild;
 
-					// Fixes #12346
-					// Support: Webkit, IE
+					// Ensure the created nodes are orphaned (#12392)
 					tmp.textContent = "";
 				}
 			}
@@ -5464,7 +5483,7 @@ function actualDisplay( name, doc ) {
 		// getDefaultComputedStyle might be reliably used only on attached element
 		display = window.getDefaultComputedStyle && ( style = window.getDefaultComputedStyle( elem[ 0 ] ) ) ?
 
-			// Use of this method is a temporary fix (more like optmization) until something better comes along,
+			// Use of this method is a temporary fix (more like optimization) until something better comes along,
 			// since it was removed from specification and supported only in FF
 			style.display : jQuery.css( elem[ 0 ], "display" );
 
@@ -5514,7 +5533,14 @@ var rmargin = (/^margin/);
 var rnumnonpx = new RegExp( "^(" + pnum + ")(?!px)[a-z%]+$", "i" );
 
 var getStyles = function( elem ) {
-		return elem.ownerDocument.defaultView.getComputedStyle( elem, null );
+		// Support: IE<=11+, Firefox<=30+ (#15098, #14150)
+		// IE throws on elements created in popups
+		// FF meanwhile throws on frame elements through "defaultView.getComputedStyle"
+		if ( elem.ownerDocument.defaultView.opener ) {
+			return elem.ownerDocument.defaultView.getComputedStyle( elem, null );
+		}
+
+		return window.getComputedStyle( elem, null );
 	};
 
 
@@ -5526,7 +5552,7 @@ function curCSS( elem, name, computed ) {
 	computed = computed || getStyles( elem );
 
 	// Support: IE9
-	// getPropertyValue is only needed for .css('filter') in IE9, see #12537
+	// getPropertyValue is only needed for .css('filter') (#12537)
 	if ( computed ) {
 		ret = computed.getPropertyValue( name ) || computed[ name ];
 	}
@@ -5572,15 +5598,13 @@ function addGetHookIf( conditionFn, hookFn ) {
 	return {
 		get: function() {
 			if ( conditionFn() ) {
-				// Hook not needed (or it's not possible to use it due to missing dependency),
-				// remove it.
-				// Since there are no other hooks for marginRight, remove the whole object.
+				// Hook not needed (or it's not possible to use it due
+				// to missing dependency), remove it.
 				delete this.get;
 				return;
 			}
 
 			// Hook needed; redefine it so that the support test is not executed again.
-
 			return (this.get = hookFn).apply( this, arguments );
 		}
 	};
@@ -5597,6 +5621,8 @@ function addGetHookIf( conditionFn, hookFn ) {
 		return;
 	}
 
+	// Support: IE9-11+
+	// Style of cloned element affects source element cloned (#8908)
 	div.style.backgroundClip = "content-box";
 	div.cloneNode( true ).style.backgroundClip = "";
 	support.clearCloneStyle = div.style.backgroundClip === "content-box";
@@ -5629,6 +5655,7 @@ function addGetHookIf( conditionFn, hookFn ) {
 	if ( window.getComputedStyle ) {
 		jQuery.extend( support, {
 			pixelPosition: function() {
+
 				// This test is executed only once but we still do memoizing
 				// since we can use the boxSizingReliable pre-computing.
 				// No need to check if the test was already performed, though.
@@ -5642,6 +5669,7 @@ function addGetHookIf( conditionFn, hookFn ) {
 				return boxSizingReliableVal;
 			},
 			reliableMarginRight: function() {
+
 				// Support: Android 2.3
 				// Check if div with explicit width and no margin-right incorrectly
 				// gets computed margin-right based on width of container. (#3333)
@@ -5663,6 +5691,7 @@ function addGetHookIf( conditionFn, hookFn ) {
 				ret = !parseFloat( window.getComputedStyle( marginDiv, null ).marginRight );
 
 				docElem.removeChild( container );
+				div.removeChild( marginDiv );
 
 				return ret;
 			}
@@ -5694,8 +5723,8 @@ jQuery.swap = function( elem, options, callback, args ) {
 
 
 var
-	// swappable if display is none or starts with table except "table", "table-cell", or "table-caption"
-	// see here for display values: https://developer.mozilla.org/en-US/docs/CSS/display
+	// Swappable if display is none or starts with table except "table", "table-cell", or "table-caption"
+	// See here for display values: https://developer.mozilla.org/en-US/docs/CSS/display
 	rdisplayswap = /^(none|table(?!-c[ea]).+)/,
 	rnumsplit = new RegExp( "^(" + pnum + ")(.*)$", "i" ),
 	rrelNum = new RegExp( "^([+-])=(" + pnum + ")", "i" ),
@@ -5708,15 +5737,15 @@ var
 
 	cssPrefixes = [ "Webkit", "O", "Moz", "ms" ];
 
-// return a css property mapped to a potentially vendor prefixed property
+// Return a css property mapped to a potentially vendor prefixed property
 function vendorPropName( style, name ) {
 
-	// shortcut for names that are not vendor prefixed
+	// Shortcut for names that are not vendor prefixed
 	if ( name in style ) {
 		return name;
 	}
 
-	// check for vendor prefixed names
+	// Check for vendor prefixed names
 	var capName = name[0].toUpperCase() + name.slice(1),
 		origName = name,
 		i = cssPrefixes.length;
@@ -5749,7 +5778,7 @@ function augmentWidthOrHeight( elem, name, extra, isBorderBox, styles ) {
 		val = 0;
 
 	for ( ; i < 4; i += 2 ) {
-		// both box models exclude margin, so add it if we want it
+		// Both box models exclude margin, so add it if we want it
 		if ( extra === "margin" ) {
 			val += jQuery.css( elem, extra + cssExpand[ i ], true, styles );
 		}
@@ -5760,15 +5789,15 @@ function augmentWidthOrHeight( elem, name, extra, isBorderBox, styles ) {
 				val -= jQuery.css( elem, "padding" + cssExpand[ i ], true, styles );
 			}
 
-			// at this point, extra isn't border nor margin, so remove border
+			// At this point, extra isn't border nor margin, so remove border
 			if ( extra !== "margin" ) {
 				val -= jQuery.css( elem, "border" + cssExpand[ i ] + "Width", true, styles );
 			}
 		} else {
-			// at this point, extra isn't content, so add padding
+			// At this point, extra isn't content, so add padding
 			val += jQuery.css( elem, "padding" + cssExpand[ i ], true, styles );
 
-			// at this point, extra isn't content nor padding, so add border
+			// At this point, extra isn't content nor padding, so add border
 			if ( extra !== "padding" ) {
 				val += jQuery.css( elem, "border" + cssExpand[ i ] + "Width", true, styles );
 			}
@@ -5786,7 +5815,7 @@ function getWidthOrHeight( elem, name, extra ) {
 		styles = getStyles( elem ),
 		isBorderBox = jQuery.css( elem, "boxSizing", false, styles ) === "border-box";
 
-	// some non-html elements return undefined for offsetWidth, so check for null/undefined
+	// Some non-html elements return undefined for offsetWidth, so check for null/undefined
 	// svg - https://bugzilla.mozilla.org/show_bug.cgi?id=649285
 	// MathML - https://bugzilla.mozilla.org/show_bug.cgi?id=491668
 	if ( val <= 0 || val == null ) {
@@ -5801,7 +5830,7 @@ function getWidthOrHeight( elem, name, extra ) {
 			return val;
 		}
 
-		// we need the check for style in case a browser which returns unreliable values
+		// Check for style in case a browser which returns unreliable values
 		// for getComputedStyle silently falls back to the reliable elem.style
 		valueIsBorderBox = isBorderBox &&
 			( support.boxSizingReliable() || val === elem.style[ name ] );
@@ -5810,7 +5839,7 @@ function getWidthOrHeight( elem, name, extra ) {
 		val = parseFloat( val ) || 0;
 	}
 
-	// use the active box-sizing model to add/subtract irrelevant styles
+	// Use the active box-sizing model to add/subtract irrelevant styles
 	return ( val +
 		augmentWidthOrHeight(
 			elem,
@@ -5874,12 +5903,14 @@ function showHide( elements, show ) {
 }
 
 jQuery.extend({
+
 	// Add in style property hooks for overriding the default
 	// behavior of getting and setting a style property
 	cssHooks: {
 		opacity: {
 			get: function( elem, computed ) {
 				if ( computed ) {
+
 					// We should always get a number back from opacity
 					var ret = curCSS( elem, "opacity" );
 					return ret === "" ? "1" : ret;
@@ -5907,12 +5938,12 @@ jQuery.extend({
 	// Add in properties whose names you wish to fix before
 	// setting or getting the value
 	cssProps: {
-		// normalize float css property
 		"float": "cssFloat"
 	},
 
 	// Get and set the style property on a DOM Node
 	style: function( elem, name, value, extra ) {
+
 		// Don't set styles on text and comment nodes
 		if ( !elem || elem.nodeType === 3 || elem.nodeType === 8 || !elem.style ) {
 			return;
@@ -5925,33 +5956,32 @@ jQuery.extend({
 
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( style, origName ) );
 
-		// gets hook for the prefixed version
-		// followed by the unprefixed version
+		// Gets hook for the prefixed version, then unprefixed version
 		hooks = jQuery.cssHooks[ name ] || jQuery.cssHooks[ origName ];
 
 		// Check if we're setting a value
 		if ( value !== undefined ) {
 			type = typeof value;
 
-			// convert relative number strings (+= or -=) to relative numbers. #7345
+			// Convert "+=" or "-=" to relative numbers (#7345)
 			if ( type === "string" && (ret = rrelNum.exec( value )) ) {
 				value = ( ret[1] + 1 ) * ret[2] + parseFloat( jQuery.css( elem, name ) );
 				// Fixes bug #9237
 				type = "number";
 			}
 
-			// Make sure that null and NaN values aren't set. See: #7116
+			// Make sure that null and NaN values aren't set (#7116)
 			if ( value == null || value !== value ) {
 				return;
 			}
 
-			// If a number was passed in, add 'px' to the (except for certain CSS properties)
+			// If a number, add 'px' to the (except for certain CSS properties)
 			if ( type === "number" && !jQuery.cssNumber[ origName ] ) {
 				value += "px";
 			}
 
-			// Fixes #8908, it can be done more correctly by specifying setters in cssHooks,
-			// but it would mean to define eight (for every problematic property) identical functions
+			// Support: IE9-11+
+			// background-* props affect original clone's values
 			if ( !support.clearCloneStyle && value === "" && name.indexOf( "background" ) === 0 ) {
 				style[ name ] = "inherit";
 			}
@@ -5979,8 +6009,7 @@ jQuery.extend({
 		// Make sure that we're working with the right name
 		name = jQuery.cssProps[ origName ] || ( jQuery.cssProps[ origName ] = vendorPropName( elem.style, origName ) );
 
-		// gets hook for the prefixed version
-		// followed by the unprefixed version
+		// Try prefixed name followed by the unprefixed name
 		hooks = jQuery.cssHooks[ name ] || jQuery.cssHooks[ origName ];
 
 		// If a hook was provided get the computed value from there
@@ -5993,12 +6022,12 @@ jQuery.extend({
 			val = curCSS( elem, name, styles );
 		}
 
-		//convert "normal" to computed value
+		// Convert "normal" to computed value
 		if ( val === "normal" && name in cssNormalTransform ) {
 			val = cssNormalTransform[ name ];
 		}
 
-		// Return, converting to number if forced or a qualifier was provided and val looks numeric
+		// Make numeric if forced or a qualifier was provided and val looks numeric
 		if ( extra === "" || extra ) {
 			num = parseFloat( val );
 			return extra === true || jQuery.isNumeric( num ) ? num || 0 : val;
@@ -6011,8 +6040,9 @@ jQuery.each([ "height", "width" ], function( i, name ) {
 	jQuery.cssHooks[ name ] = {
 		get: function( elem, computed, extra ) {
 			if ( computed ) {
-				// certain elements can have dimension info if we invisibly show them
-				// however, it must have a current display style that would benefit from this
+
+				// Certain elements can have dimension info if we invisibly show them
+				// but it must have a current display style that would benefit
 				return rdisplayswap.test( jQuery.css( elem, "display" ) ) && elem.offsetWidth === 0 ?
 					jQuery.swap( elem, cssShow, function() {
 						return getWidthOrHeight( elem, name, extra );
@@ -6040,8 +6070,6 @@ jQuery.each([ "height", "width" ], function( i, name ) {
 jQuery.cssHooks.marginRight = addGetHookIf( support.reliableMarginRight,
 	function( elem, computed ) {
 		if ( computed ) {
-			// WebKit Bug 13343 - getComputedStyle returns wrong value for margin-right
-			// Work around by temporarily setting element display to inline-block
 			return jQuery.swap( elem, { "display": "inline-block" },
 				curCSS, [ elem, "marginRight" ] );
 		}
@@ -6059,7 +6087,7 @@ jQuery.each({
 			var i = 0,
 				expanded = {},
 
-				// assumes a single number if not a string
+				// Assumes a single number if not a string
 				parts = typeof value === "string" ? value.split(" ") : [ value ];
 
 			for ( ; i < 4; i++ ) {
@@ -6182,17 +6210,18 @@ Tween.propHooks = {
 				return tween.elem[ tween.prop ];
 			}
 
-			// passing an empty string as a 3rd parameter to .css will automatically
-			// attempt a parseFloat and fallback to a string if the parse fails
-			// so, simple values such as "10px" are parsed to Float.
-			// complex values such as "rotate(1rad)" are returned as is.
+			// Passing an empty string as a 3rd parameter to .css will automatically
+			// attempt a parseFloat and fallback to a string if the parse fails.
+			// Simple values such as "10px" are parsed to Float;
+			// complex values such as "rotate(1rad)" are returned as-is.
 			result = jQuery.css( tween.elem, tween.prop, "" );
 			// Empty strings, null, undefined and "auto" are converted to 0.
 			return !result || result === "auto" ? 0 : result;
 		},
 		set: function( tween ) {
-			// use step hook for back compat - use cssHook if its there - use .style if its
-			// available and use plain properties where available
+			// Use step hook for back compat.
+			// Use cssHook if its there.
+			// Use .style if available and use plain properties where available.
 			if ( jQuery.fx.step[ tween.prop ] ) {
 				jQuery.fx.step[ tween.prop ]( tween );
 			} else if ( tween.elem.style && ( tween.elem.style[ jQuery.cssProps[ tween.prop ] ] != null || jQuery.cssHooks[ tween.prop ] ) ) {
@@ -6206,7 +6235,6 @@ Tween.propHooks = {
 
 // Support: IE9
 // Panic based approach to setting things on disconnected nodes
-
 Tween.propHooks.scrollTop = Tween.propHooks.scrollLeft = {
 	set: function( tween ) {
 		if ( tween.elem.nodeType && tween.elem.parentNode ) {
@@ -6262,16 +6290,16 @@ var
 				start = +target || 1;
 
 				do {
-					// If previous iteration zeroed out, double until we get *something*
-					// Use a string for doubling factor so we don't accidentally see scale as unchanged below
+					// If previous iteration zeroed out, double until we get *something*.
+					// Use string for doubling so we don't accidentally see scale as unchanged below
 					scale = scale || ".5";
 
 					// Adjust and apply
 					start = start / scale;
 					jQuery.style( tween.elem, prop, start + unit );
 
-				// Update scale, tolerating zero or NaN from tween.cur()
-				// And breaking the loop if scale is unchanged or perfect, or if we've just had enough
+				// Update scale, tolerating zero or NaN from tween.cur(),
+				// break the loop if scale is unchanged or perfect, or if we've just had enough
 				} while ( scale !== (scale = tween.cur() / target) && scale !== 1 && --maxIterations );
 			}
 
@@ -6303,8 +6331,8 @@ function genFx( type, includeWidth ) {
 		i = 0,
 		attrs = { height: type };
 
-	// if we include width, step value is 1 to do all cssExpand values,
-	// if we don't include width, step value is 2 to skip over Left and Right
+	// If we include width, step value is 1 to do all cssExpand values,
+	// otherwise step value is 2 to skip over Left and Right
 	includeWidth = includeWidth ? 1 : 0;
 	for ( ; i < 4 ; i += 2 - includeWidth ) {
 		which = cssExpand[ i ];
@@ -6326,7 +6354,7 @@ function createTween( value, prop, animation ) {
 	for ( ; index < length; index++ ) {
 		if ( (tween = collection[ index ].call( animation, prop, value )) ) {
 
-			// we're done with this property
+			// We're done with this property
 			return tween;
 		}
 	}
@@ -6341,7 +6369,7 @@ function defaultPrefilter( elem, props, opts ) {
 		hidden = elem.nodeType && isHidden( elem ),
 		dataShow = data_priv.get( elem, "fxshow" );
 
-	// handle queue: false promises
+	// Handle queue: false promises
 	if ( !opts.queue ) {
 		hooks = jQuery._queueHooks( elem, "fx" );
 		if ( hooks.unqueued == null ) {
@@ -6356,8 +6384,7 @@ function defaultPrefilter( elem, props, opts ) {
 		hooks.unqueued++;
 
 		anim.always(function() {
-			// doing this makes sure that the complete handler will be called
-			// before this completes
+			// Ensure the complete handler is called before this completes
 			anim.always(function() {
 				hooks.unqueued--;
 				if ( !jQuery.queue( elem, "fx" ).length ) {
@@ -6367,7 +6394,7 @@ function defaultPrefilter( elem, props, opts ) {
 		});
 	}
 
-	// height/width overflow pass
+	// Height/width overflow pass
 	if ( elem.nodeType === 1 && ( "height" in props || "width" in props ) ) {
 		// Make sure that nothing sneaks out
 		// Record all 3 overflow attributes because IE9-10 do not
@@ -6429,7 +6456,7 @@ function defaultPrefilter( elem, props, opts ) {
 			dataShow = data_priv.access( elem, "fxshow", {} );
 		}
 
-		// store state if its toggle - enables .stop().toggle() to "reverse"
+		// Store state if its toggle - enables .stop().toggle() to "reverse"
 		if ( toggle ) {
 			dataShow.hidden = !hidden;
 		}
@@ -6489,8 +6516,8 @@ function propFilter( props, specialEasing ) {
 			value = hooks.expand( value );
 			delete props[ name ];
 
-			// not quite $.extend, this wont overwrite keys already present.
-			// also - reusing 'index' from above because we have the correct "name"
+			// Not quite $.extend, this won't overwrite existing keys.
+			// Reusing 'index' because we have the correct "name"
 			for ( index in value ) {
 				if ( !( index in props ) ) {
 					props[ index ] = value[ index ];
@@ -6509,7 +6536,7 @@ function Animation( elem, properties, options ) {
 		index = 0,
 		length = animationPrefilters.length,
 		deferred = jQuery.Deferred().always( function() {
-			// don't match elem in the :animated selector
+			// Don't match elem in the :animated selector
 			delete tick.elem;
 		}),
 		tick = function() {
@@ -6518,7 +6545,8 @@ function Animation( elem, properties, options ) {
 			}
 			var currentTime = fxNow || createFxNow(),
 				remaining = Math.max( 0, animation.startTime + animation.duration - currentTime ),
-				// archaic crash bug won't allow us to use 1 - ( 0.5 || 0 ) (#12497)
+				// Support: Android 2.3
+				// Archaic crash bug won't allow us to use `1 - ( 0.5 || 0 )` (#12497)
 				temp = remaining / animation.duration || 0,
 				percent = 1 - temp,
 				index = 0,
@@ -6554,7 +6582,7 @@ function Animation( elem, properties, options ) {
 			},
 			stop: function( gotoEnd ) {
 				var index = 0,
-					// if we are going to the end, we want to run all the tweens
+					// If we are going to the end, we want to run all the tweens
 					// otherwise we skip this part
 					length = gotoEnd ? animation.tweens.length : 0;
 				if ( stopped ) {
@@ -6565,8 +6593,7 @@ function Animation( elem, properties, options ) {
 					animation.tweens[ index ].run( 1 );
 				}
 
-				// resolve when we played the last frame
-				// otherwise, reject
+				// Resolve when we played the last frame; otherwise, reject
 				if ( gotoEnd ) {
 					deferred.resolveWith( elem, [ animation, gotoEnd ] );
 				} else {
@@ -6648,7 +6675,7 @@ jQuery.speed = function( speed, easing, fn ) {
 	opt.duration = jQuery.fx.off ? 0 : typeof opt.duration === "number" ? opt.duration :
 		opt.duration in jQuery.fx.speeds ? jQuery.fx.speeds[ opt.duration ] : jQuery.fx.speeds._default;
 
-	// normalize opt.queue - true/undefined/null -> "fx"
+	// Normalize opt.queue - true/undefined/null -> "fx"
 	if ( opt.queue == null || opt.queue === true ) {
 		opt.queue = "fx";
 	}
@@ -6672,10 +6699,10 @@ jQuery.speed = function( speed, easing, fn ) {
 jQuery.fn.extend({
 	fadeTo: function( speed, to, easing, callback ) {
 
-		// show any hidden elements after setting opacity to 0
+		// Show any hidden elements after setting opacity to 0
 		return this.filter( isHidden ).css( "opacity", 0 ).show()
 
-			// animate to the value specified
+			// Animate to the value specified
 			.end().animate({ opacity: to }, speed, easing, callback );
 	},
 	animate: function( prop, speed, easing, callback ) {
@@ -6738,9 +6765,9 @@ jQuery.fn.extend({
 				}
 			}
 
-			// start the next in the queue if the last step wasn't forced
-			// timers currently will call their complete callbacks, which will dequeue
-			// but only if they were gotoEnd
+			// Start the next in the queue if the last step wasn't forced.
+			// Timers currently will call their complete callbacks, which
+			// will dequeue but only if they were gotoEnd.
 			if ( dequeue || !gotoEnd ) {
 				jQuery.dequeue( this, type );
 			}
@@ -6758,17 +6785,17 @@ jQuery.fn.extend({
 				timers = jQuery.timers,
 				length = queue ? queue.length : 0;
 
-			// enable finishing flag on private data
+			// Enable finishing flag on private data
 			data.finish = true;
 
-			// empty the queue first
+			// Empty the queue first
 			jQuery.queue( this, type, [] );
 
 			if ( hooks && hooks.stop ) {
 				hooks.stop.call( this, true );
 			}
 
-			// look for any active animations, and finish them
+			// Look for any active animations, and finish them
 			for ( index = timers.length; index--; ) {
 				if ( timers[ index ].elem === this && timers[ index ].queue === type ) {
 					timers[ index ].anim.stop( true );
@@ -6776,14 +6803,14 @@ jQuery.fn.extend({
 				}
 			}
 
-			// look for any animations in the old queue and finish them
+			// Look for any animations in the old queue and finish them
 			for ( index = 0; index < length; index++ ) {
 				if ( queue[ index ] && queue[ index ].finish ) {
 					queue[ index ].finish.call( this );
 				}
 			}
 
-			// turn off finishing flag
+			// Turn off finishing flag
 			delete data.finish;
 		});
 	}
@@ -6886,21 +6913,21 @@ jQuery.fn.delay = function( time, type ) {
 
 	input.type = "checkbox";
 
-	// Support: iOS 5.1, Android 4.x, Android 2.3
-	// Check the default checkbox/radio value ("" on old WebKit; "on" elsewhere)
+	// Support: iOS<=5.1, Android<=4.2+
+	// Default value for a checkbox should be "on"
 	support.checkOn = input.value !== "";
 
-	// Must access the parent to make an option select properly
-	// Support: IE9, IE10
+	// Support: IE<=11+
+	// Must access selectedIndex to make default options select
 	support.optSelected = opt.selected;
 
-	// Make sure that the options inside disabled selects aren't marked as disabled
-	// (WebKit marks them as disabled)
+	// Support: Android<=2.3
+	// Options inside disabled selects are incorrectly marked as disabled
 	select.disabled = true;
 	support.optDisabled = !opt.disabled;
 
-	// Check if an input maintains its value after becoming a radio
-	// Support: IE9, IE10
+	// Support: IE<=11+
+	// An input loses its value after becoming a radio
 	input = document.createElement( "input" );
 	input.value = "t";
 	input.type = "radio";
@@ -6997,8 +7024,6 @@ jQuery.extend({
 			set: function( elem, value ) {
 				if ( !support.radioValue && value === "radio" &&
 					jQuery.nodeName( elem, "input" ) ) {
-					// Setting the type on a radio button after the value resets the value in IE6-9
-					// Reset value to default in case type is set after value during creation
 					var val = elem.value;
 					elem.setAttribute( "type", value );
 					if ( val ) {
@@ -7068,7 +7093,7 @@ jQuery.extend({
 		var ret, hooks, notxml,
 			nType = elem.nodeType;
 
-		// don't get/set properties on text, comment and attribute nodes
+		// Don't get/set properties on text, comment and attribute nodes
 		if ( !elem || nType === 3 || nType === 8 || nType === 2 ) {
 			return;
 		}
@@ -7104,8 +7129,6 @@ jQuery.extend({
 	}
 });
 
-// Support: IE9+
-// Selectedness for an option in an optgroup can be inaccurate
 if ( !support.optSelected ) {
 	jQuery.propHooks.selected = {
 		get: function( elem ) {
@@ -7213,7 +7236,7 @@ jQuery.fn.extend({
 						}
 					}
 
-					// only assign if different to avoid unneeded rendering.
+					// Only assign if different to avoid unneeded rendering.
 					finalValue = value ? jQuery.trim( cur ) : "";
 					if ( elem.className !== finalValue ) {
 						elem.className = finalValue;
@@ -7240,14 +7263,14 @@ jQuery.fn.extend({
 
 		return this.each(function() {
 			if ( type === "string" ) {
-				// toggle individual class names
+				// Toggle individual class names
 				var className,
 					i = 0,
 					self = jQuery( this ),
 					classNames = value.match( rnotwhite ) || [];
 
 				while ( (className = classNames[ i++ ]) ) {
-					// check each className given, space separated list
+					// Check each className given, space separated list
 					if ( self.hasClass( className ) ) {
 						self.removeClass( className );
 					} else {
@@ -7262,7 +7285,7 @@ jQuery.fn.extend({
 					data_priv.set( this, "__className__", this.className );
 				}
 
-				// If the element has a class name or if we're passed "false",
+				// If the element has a class name or if we're passed `false`,
 				// then remove the whole classname (if there was one, the above saved it).
 				// Otherwise bring back whatever was previously saved (if anything),
 				// falling back to the empty string if nothing was stored.
@@ -7306,9 +7329,9 @@ jQuery.fn.extend({
 				ret = elem.value;
 
 				return typeof ret === "string" ?
-					// handle most common string cases
+					// Handle most common string cases
 					ret.replace(rreturn, "") :
-					// handle cases where value is null/undef or number
+					// Handle cases where value is null/undef or number
 					ret == null ? "" : ret;
 			}
 
@@ -7416,7 +7439,7 @@ jQuery.extend({
 					}
 				}
 
-				// force browsers to behave consistently when non-matching value is set
+				// Force browsers to behave consistently when non-matching value is set
 				if ( !optionSet ) {
 					elem.selectedIndex = -1;
 				}
@@ -7437,8 +7460,6 @@ jQuery.each([ "radio", "checkbox" ], function() {
 	};
 	if ( !support.checkOn ) {
 		jQuery.valHooks[ this ].get = function( elem ) {
-			// Support: Webkit
-			// "" is returned instead of "on" if a value isn't specified
 			return elem.getAttribute("value") === null ? "on" : elem.value;
 		};
 	}
@@ -7520,10 +7541,6 @@ jQuery.parseXML = function( data ) {
 
 
 var
-	// Document location
-	ajaxLocParts,
-	ajaxLocation,
-
 	rhash = /#.*$/,
 	rts = /([?&])_=[^&]*/,
 	rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg,
@@ -7552,22 +7569,13 @@ var
 	transports = {},
 
 	// Avoid comment-prolog char sequence (#10098); must appease lint and evade compression
-	allTypes = "*/".concat("*");
+	allTypes = "*/".concat( "*" ),
 
-// #8138, IE may throw an exception when accessing
-// a field from window.location if document.domain has been set
-try {
-	ajaxLocation = location.href;
-} catch( e ) {
-	// Use the href attribute of an A element
-	// since IE will modify it given document.location
-	ajaxLocation = document.createElement( "a" );
-	ajaxLocation.href = "";
-	ajaxLocation = ajaxLocation.href;
-}
+	// Document location
+	ajaxLocation = window.location.href,
 
-// Segment location into parts
-ajaxLocParts = rurl.exec( ajaxLocation.toLowerCase() ) || [];
+	// Segment location into parts
+	ajaxLocParts = rurl.exec( ajaxLocation.toLowerCase() ) || [];
 
 // Base "constructor" for jQuery.ajaxPrefilter and jQuery.ajaxTransport
 function addToPrefiltersOrTransports( structure ) {
@@ -8046,7 +8054,8 @@ jQuery.extend({
 		}
 
 		// We can fire global events as of now if asked to
-		fireGlobals = s.global;
+		// Don't fire events if jQuery.event is undefined in an AMD-usage scenario (#15118)
+		fireGlobals = jQuery.event && s.global;
 
 		// Watch for a new set of requests
 		if ( fireGlobals && jQuery.active++ === 0 ) {
@@ -8119,7 +8128,7 @@ jQuery.extend({
 			return jqXHR.abort();
 		}
 
-		// aborting is no longer a cancellation
+		// Aborting is no longer a cancellation
 		strAbort = "abort";
 
 		// Install callbacks on deferreds
@@ -8231,8 +8240,7 @@ jQuery.extend({
 					isSuccess = !error;
 				}
 			} else {
-				// We extract error from statusText
-				// then normalize statusText and status for non-aborts
+				// Extract error from statusText and normalize for non-aborts
 				error = statusText;
 				if ( status || !statusText ) {
 					statusText = "error";
@@ -8288,7 +8296,7 @@ jQuery.extend({
 
 jQuery.each( [ "get", "post" ], function( i, method ) {
 	jQuery[ method ] = function( url, data, callback, type ) {
-		// shift arguments if data argument was omitted
+		// Shift arguments if data argument was omitted
 		if ( jQuery.isFunction( data ) ) {
 			type = type || callback;
 			callback = data;
@@ -8302,13 +8310,6 @@ jQuery.each( [ "get", "post" ], function( i, method ) {
 			data: data,
 			success: callback
 		});
-	};
-});
-
-// Attach a bunch of functions for handling common AJAX events
-jQuery.each( [ "ajaxStart", "ajaxStop", "ajaxComplete", "ajaxError", "ajaxSuccess", "ajaxSend" ], function( i, type ) {
-	jQuery.fn[ type ] = function( fn ) {
-		return this.on( type, fn );
 	};
 });
 
@@ -8529,8 +8530,9 @@ var xhrId = 0,
 
 // Support: IE9
 // Open requests must be manually aborted on unload (#5280)
-if ( window.ActiveXObject ) {
-	jQuery( window ).on( "unload", function() {
+// See https://support.microsoft.com/kb/2856746 for more info
+if ( window.attachEvent ) {
+	window.attachEvent( "onunload", function() {
 		for ( var key in xhrCallbacks ) {
 			xhrCallbacks[ key ]();
 		}
@@ -8883,6 +8885,16 @@ jQuery.fn.load = function( url, params, callback ) {
 
 
 
+// Attach a bunch of functions for handling common AJAX events
+jQuery.each( [ "ajaxStart", "ajaxStop", "ajaxComplete", "ajaxError", "ajaxSuccess", "ajaxSend" ], function( i, type ) {
+	jQuery.fn[ type ] = function( fn ) {
+		return this.on( type, fn );
+	};
+});
+
+
+
+
 jQuery.expr.filters.animated = function( elem ) {
 	return jQuery.grep(jQuery.timers, function( fn ) {
 		return elem === fn.elem;
@@ -8919,7 +8931,8 @@ jQuery.offset = {
 		calculatePosition = ( position === "absolute" || position === "fixed" ) &&
 			( curCSSTop + curCSSLeft ).indexOf("auto") > -1;
 
-		// Need to be able to calculate position if either top or left is auto and position is either absolute or fixed
+		// Need to be able to calculate position if either
+		// top or left is auto and position is either absolute or fixed
 		if ( calculatePosition ) {
 			curPosition = curElem.position();
 			curTop = curPosition.top;
@@ -8976,8 +8989,8 @@ jQuery.fn.extend({
 			return box;
 		}
 
+		// Support: BlackBerry 5, iOS 3 (original iPhone)
 		// If we don't have gBCR, just use 0,0 rather than error
-		// BlackBerry 5, iOS 3 (original iPhone)
 		if ( typeof elem.getBoundingClientRect !== strundefined ) {
 			box = elem.getBoundingClientRect();
 		}
@@ -8999,7 +9012,7 @@ jQuery.fn.extend({
 
 		// Fixed elements are offset from window (parentOffset = {top:0, left: 0}, because it is its only offset parent
 		if ( jQuery.css( elem, "position" ) === "fixed" ) {
-			// We assume that getBoundingClientRect is available when computed position is fixed
+			// Assume getBoundingClientRect is there when computed position is fixed
 			offset = elem.getBoundingClientRect();
 
 		} else {
@@ -9062,16 +9075,18 @@ jQuery.each( { scrollLeft: "pageXOffset", scrollTop: "pageYOffset" }, function( 
 	};
 });
 
+// Support: Safari<7+, Chrome<37+
 // Add the top/left cssHooks using jQuery.fn.position
 // Webkit bug: https://bugs.webkit.org/show_bug.cgi?id=29084
-// getComputedStyle returns percent when specified for top/left/bottom/right
-// rather than make the css module depend on the offset module, we just check for it here
+// Blink bug: https://code.google.com/p/chromium/issues/detail?id=229280
+// getComputedStyle returns percent when specified for top/left/bottom/right;
+// rather than make the css module depend on the offset module, just check for it here
 jQuery.each( [ "top", "left" ], function( i, prop ) {
 	jQuery.cssHooks[ prop ] = addGetHookIf( support.pixelPosition,
 		function( elem, computed ) {
 			if ( computed ) {
 				computed = curCSS( elem, prop );
-				// if curCSS returns percentage, fallback to offset
+				// If curCSS returns percentage, fallback to offset
 				return rnumnonpx.test( computed ) ?
 					jQuery( elem ).position()[ prop ] + "px" :
 					computed;
@@ -9084,7 +9099,7 @@ jQuery.each( [ "top", "left" ], function( i, prop ) {
 // Create innerHeight, innerWidth, height, width, outerHeight and outerWidth methods
 jQuery.each( { Height: "height", Width: "width" }, function( name, type ) {
 	jQuery.each( { padding: "inner" + name, content: type, "": "outer" + name }, function( defaultExtra, funcName ) {
-		// margin is only for outerHeight, outerWidth
+		// Margin is only for outerHeight, outerWidth
 		jQuery.fn[ funcName ] = function( margin, value ) {
 			var chainable = arguments.length && ( defaultExtra || typeof margin !== "boolean" ),
 				extra = defaultExtra || ( margin === true || value === true ? "margin" : "border" );
@@ -9175,8 +9190,8 @@ jQuery.noConflict = function( deep ) {
 	return jQuery;
 };
 
-// Expose jQuery and $ identifiers, even in
-// AMD (#7102#comment:10, https://github.com/jquery/jquery/pull/557)
+// Expose jQuery and $ identifiers, even in AMD
+// (#7102#comment:10, https://github.com/jquery/jquery/pull/557)
 // and CommonJS for browser emulators (#13566)
 if ( typeof noGlobal === strundefined ) {
 	window.jQuery = window.$ = jQuery;
@@ -9188,353 +9203,6 @@ if ( typeof noGlobal === strundefined ) {
 return jQuery;
 
 }));
-
-/**!
- * AngularJS file upload shim for HTML5 FormData
- * @author  Danial  <danial.farid@gmail.com>
- * @version 1.6.5
- */
-(function() {
-
-var hasFlash = function() {
-	try {
-	  var fo = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
-	  if (fo) return true;
-	} catch(e) {
-	  if (navigator.mimeTypes["application/x-shockwave-flash"] != undefined) return true;
-	}
-	return false;
-}
-
-var patchXHR = function(fnName, newFn) {
-	window.XMLHttpRequest.prototype[fnName] = newFn(window.XMLHttpRequest.prototype[fnName]);
-};
-
-if (window.XMLHttpRequest) {
-	if (window.FormData && (!window.FileAPI || !FileAPI.forceLoad)) {
-		// allow access to Angular XHR private field: https://github.com/angular/angular.js/issues/1934
-		patchXHR("setRequestHeader", function(orig) {
-			return function(header, value) {
-				if (header === '__setXHR_') {
-					var val = value(this);
-					// fix for angular < 1.2.0
-					if (val instanceof Function) {
-						val(this);
-					}
-				} else {
-					orig.apply(this, arguments);
-				}
-			}
-		});
-	} else {
-		function initializeUploadListener(xhr) {
-			if (!xhr.__listeners) {
-				if (!xhr.upload) xhr.upload = {};
-				xhr.__listeners = [];
-				var origAddEventListener = xhr.upload.addEventListener;
-				xhr.upload.addEventListener = function(t, fn, b) {
-					xhr.__listeners[t] = fn;
-					origAddEventListener && origAddEventListener.apply(this, arguments);
-				};
-			}
-		}
-		
-		patchXHR("open", function(orig) {
-			return function(m, url, b) {
-				initializeUploadListener(this);
-				this.__url = url;
-				try {
-					orig.apply(this, [m, url, b]);
-				} catch (e) {
-					if (e.message.indexOf('Access is denied') > -1) {
-						orig.apply(this, [m, '_fix_for_ie_crossdomain__', b]);
-					}
-				}
-			}
-		});
-
-		patchXHR("getResponseHeader", function(orig) {
-			return function(h) {
-				return this.__fileApiXHR ? this.__fileApiXHR.getResponseHeader(h) : orig.apply(this, [h]);
-			};
-		});
-
-		patchXHR("getAllResponseHeaders", function(orig) {
-			return function() {
-				return this.__fileApiXHR ? this.__fileApiXHR.abort() : (orig == null ? null : orig.apply(this));
-			}
-		});
-
-		patchXHR("abort", function(orig) {
-			return function() {
-				return this.__fileApiXHR ? this.__fileApiXHR.abort() : (orig == null ? null : orig.apply(this));
-			}
-		});
-
-		patchXHR("setRequestHeader", function(orig) {
-			return function(header, value) {
-				if (header === '__setXHR_') {
-					initializeUploadListener(this);
-					var val = value(this);
-					// fix for angular < 1.2.0
-					if (val instanceof Function) {
-						val(this);
-					}
-				} else {
-					this.__requestHeaders = this.__requestHeaders || {};
-					this.__requestHeaders[header] = value;
-					orig.apply(this, arguments);
-				}
-			}
-		});
-
-		patchXHR("send", function(orig) {
-			return function() {
-				var xhr = this;
-				if (arguments[0] && arguments[0].__isShim) {
-					var formData = arguments[0];
-					var config = {
-						url: xhr.__url,
-						complete: function(err, fileApiXHR) {
-							if (!err && xhr.__listeners['load']) 
-								xhr.__listeners['load']({type: 'load', loaded: xhr.__loaded, total: xhr.__total, target: xhr, lengthComputable: true});
-							if (!err && xhr.__listeners['loadend']) 
-								xhr.__listeners['loadend']({type: 'loadend', loaded: xhr.__loaded, total: xhr.__total, target: xhr, lengthComputable: true});
-							if (err === 'abort' && xhr.__listeners['abort']) 
-								xhr.__listeners['abort']({type: 'abort', loaded: xhr.__loaded, total: xhr.__total, target: xhr, lengthComputable: true});
-							if (fileApiXHR.status !== undefined) Object.defineProperty(xhr, 'status', {get: function() {return fileApiXHR.status}});
-							if (fileApiXHR.statusText !== undefined) Object.defineProperty(xhr, 'statusText', {get: function() {return fileApiXHR.statusText}});
-							Object.defineProperty(xhr, 'readyState', {get: function() {return 4}});
-							if (fileApiXHR.response !== undefined) Object.defineProperty(xhr, 'response', {get: function() {return fileApiXHR.response}});
-							Object.defineProperty(xhr, 'responseText', {get: function() {return fileApiXHR.responseText}});
-							Object.defineProperty(xhr, 'response', {get: function() {return fileApiXHR.responseText}});
-							xhr.__fileApiXHR = fileApiXHR;
-							if (xhr.onreadystatechange) xhr.onreadystatechange();
-						},
-						fileprogress: function(e) {
-							e.target = xhr;
-							xhr.__listeners['progress'] && xhr.__listeners['progress'](e);
-							xhr.__total = e.total;
-							xhr.__loaded = e.loaded;
-						},
-						headers: xhr.__requestHeaders
-					}
-					config.data = {};
-					config.files = {}
-					for (var i = 0; i < formData.data.length; i++) {
-						var item = formData.data[i];
-						if (item.val != null && item.val.name != null && item.val.size != null && item.val.type != null) {
-							config.files[item.key] = item.val;
-						} else {
-							config.data[item.key] = item.val;
-						}
-					}
-
-					setTimeout(function() {
-						if (!hasFlash()) {
-							throw 'Adode Flash Player need to be installed. To check ahead use "FileAPI.hasFlash"';
-						}
-						xhr.__fileApiXHR = FileAPI.upload(config);
-					}, 1);
-				} else {
-					orig.apply(xhr, arguments);
-				}
-			}
-		});
-	}
-	window.XMLHttpRequest.__isShim = true;
-}
-
-if (!window.FormData || (window.FileAPI && FileAPI.forceLoad)) {
-	var addFlash = function(elem) {
-		if (!hasFlash()) {
-			throw 'Adode Flash Player need to be installed. To check ahead use "FileAPI.hasFlash"';
-		}
-		var el = angular.element(elem);
-		if (!el.hasClass('js-fileapi-wrapper') && (elem.getAttribute('ng-file-select') != null || elem.getAttribute('data-ng-file-select') != null)) {
-			if (FileAPI.wrapInsideDiv) {
-				var wrap = document.createElement('div');
-				wrap.innerHTML = '<div class="js-fileapi-wrapper" style="position:relative; overflow:hidden"></div>';
-				wrap = wrap.firstChild;
-				var parent = elem.parentNode;
-				parent.insertBefore(wrap, elem);
-				parent.removeChild(elem);
-				wrap.appendChild(elem);
-			} else {
-				el.addClass('js-fileapi-wrapper');
-			}
-		}
-	};
-	var changeFnWrapper = function(fn) {
-		return function(evt) {
-			var files = FileAPI.getFiles(evt);
-			//just a double check for #233
-			for (var i = 0; i < files.length; i++) {
-				if (files[i].size === undefined) files[i].size = 0;
-				if (files[i].name === undefined) files[i].name = 'file';
-				if (files[i].type === undefined) files[i].type = 'undefined';
-			}
-			if (!evt.target) {
-				evt.target = {};
-			}
-			evt.target.files = files;
-			// if evt.target.files is not writable use helper field
-			if (evt.target.files != files) {
-				evt.__files_ = files;
-			}
-			(evt.__files_ || evt.target.files).item = function(i) {
-				return (evt.__files_ || evt.target.files)[i] || null;
-			}
-			if (fn) fn.apply(this, [evt]);
-		};
-	};
-	var isFileChange = function(elem, e) {
-		return (e.toLowerCase() === 'change' || e.toLowerCase() === 'onchange') && elem.getAttribute('type') == 'file';
-	}
-	if (HTMLInputElement.prototype.addEventListener) {
-		HTMLInputElement.prototype.addEventListener = (function(origAddEventListener) {
-			return function(e, fn, b, d) {
-				if (isFileChange(this, e)) {
-					addFlash(this);
-					origAddEventListener.apply(this, [e, changeFnWrapper(fn), b, d]);
-				} else {
-					origAddEventListener.apply(this, [e, fn, b, d]);
-				}
-			}
-		})(HTMLInputElement.prototype.addEventListener);
-	}
-	if (HTMLInputElement.prototype.attachEvent) {
-		HTMLInputElement.prototype.attachEvent = (function(origAttachEvent) {
-			return function(e, fn) {
-				if (isFileChange(this, e)) {
-					addFlash(this);
-					if (window.jQuery) {
-						// fix for #281 jQuery on IE8
-						angular.element(this).bind("change", changeFnWrapper(null));
-					} else {
-						origAttachEvent.apply(this, [e, changeFnWrapper(fn)]);
-					}
-				} else {
-					origAttachEvent.apply(this, [e, fn]);
-				}
-			}
-		})(HTMLInputElement.prototype.attachEvent);
-	}
-
-	window.FormData = FormData = function() {
-		return {
-			append: function(key, val, name) {
-				this.data.push({
-					key: key,
-					val: val,
-					name: name
-				});
-			},
-			data: [],
-			__isShim: true
-		};
-	};
-
-	(function () {
-		//load FileAPI
-		if (!window.FileAPI) {
-			window.FileAPI = {};
-		}
-		if (FileAPI.forceLoad) {
-			FileAPI.html5 = false;
-		}
-		
-		if (!FileAPI.upload) {
-			var jsUrl, basePath, script = document.createElement('script'), allScripts = document.getElementsByTagName('script'), i, index, src;
-			if (window.FileAPI.jsUrl) {
-				jsUrl = window.FileAPI.jsUrl;
-			} else if (window.FileAPI.jsPath) {
-				basePath = window.FileAPI.jsPath;
-			} else {
-				for (i = 0; i < allScripts.length; i++) {
-					src = allScripts[i].src;
-					index = src.indexOf('angular-file-upload-shim.js')
-					if (index == -1) {
-						index = src.indexOf('angular-file-upload-shim.min.js');
-					}
-					if (index > -1) {
-						basePath = src.substring(0, index);
-						break;
-					}
-				}
-			}
-
-			if (FileAPI.staticPath == null) FileAPI.staticPath = basePath;
-			script.setAttribute('src', jsUrl || basePath + "FileAPI.min.js");
-			document.getElementsByTagName('head')[0].appendChild(script);
-			FileAPI.hasFlash = hasFlash();
-		}
-	})();
-}
-
-
-if (!window.FileReader) {
-	window.FileReader = function() {
-		var _this = this, loadStarted = false;
-		this.listeners = {};
-		this.addEventListener = function(type, fn) {
-			_this.listeners[type] = _this.listeners[type] || [];
-			_this.listeners[type].push(fn);
-		};
-		this.removeEventListener = function(type, fn) {
-			_this.listeners[type] && _this.listeners[type].splice(_this.listeners[type].indexOf(fn), 1);
-		};
-		this.dispatchEvent = function(evt) {
-			var list = _this.listeners[evt.type];
-			if (list) {
-				for (var i = 0; i < list.length; i++) {
-					list[i].call(_this, evt);
-				}
-			}
-		};
-		this.onabort = this.onerror = this.onload = this.onloadstart = this.onloadend = this.onprogress = null;
-
-		function constructEvent(type, evt) {
-			var e = {type: type, target: _this, loaded: evt.loaded, total: evt.total, error: evt.error};
-			if (evt.result != null) e.target.result = evt.result;
-			return e;
-		};
-		var listener = function(evt) {
-			if (!loadStarted) {
-				loadStarted = true;
-				_this.onloadstart && this.onloadstart(constructEvent('loadstart', evt));
-			}
-			if (evt.type === 'load') {
-				_this.onloadend && _this.onloadend(constructEvent('loadend', evt));
-				var e = constructEvent('load', evt);
-				_this.onload && _this.onload(e);
-				_this.dispatchEvent(e);
-			} else if (evt.type === 'progress') {
-				var e = constructEvent('progress', evt);
-				_this.onprogress && _this.onprogress(e);
-				_this.dispatchEvent(e);
-			} else {
-				var e = constructEvent('error', evt);
-				_this.onerror && _this.onerror(e);
-				_this.dispatchEvent(e);
-			}
-		};
-		this.readAsArrayBuffer = function(file) {
-			FileAPI.readAsBinaryString(file, listener);
-		}
-		this.readAsBinaryString = function(file) {
-			FileAPI.readAsBinaryString(file, listener);
-		}
-		this.readAsDataURL = function(file) {
-			FileAPI.readAsDataURL(file, listener);
-		}
-		this.readAsText = function(file) {
-			FileAPI.readAsText(file, listener);
-		}
-	}
-}
-
-})();
 
 /*!
  * Bootstrap v3.2.0 (http://getbootstrap.com)
@@ -34585,7 +34253,7 @@ var styleDirective = valueFn({
 }).call(this);
 
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-/* globals window, XDomainRequest, XMLHttpRequest */
+/* globals window, XDomainRequest, XMLHttpRequest, FormData */
 
 var Q = require("q");
 
@@ -34674,13 +34342,38 @@ CORS.makeCORSRequest = function(options) {
   if (options.withCredentials !== false) {
     xhr.withCredentials = true;
   }
+
+  // If it contains files, make it into a mulitpart upload
+  if (options && options.data && options.data.files) {
+    console.log("converting to formdata ", options.data);
+
+    var data = new FormData();
+    for (var part in options.data) {
+      if (options.data.hasOwnProperty(part)) {
+        data.append(part, options.data[part]);
+      }
+    }
+    options.data = data;
+    xhr.setRequestHeader("Content-Type", "multipart/form-data");
+  } else {
+    if (options.data) {
+      options.data = JSON.stringify(options.data);
+    }
+  }
   //  }
+  var onProgress = function(e) {
+    if (e.lengthComputable) {
+      var percentComplete = (e.loaded/e.total)*100;
+      console.log("percentComplete", percentComplete);
+    }
+  };
+  xhr.addEventListener("progress", onProgress, false);
 
   xhr.onload = function(e, f, g) {
     var response = xhr.responseJSON || xhr.responseText || xhr.response;
     self.debug("Response from CORS request to " + options.url + ": " + response);
     if (xhr.status >= 400) {
-      self.warn("The request was unsuccesful " + xhr.statusText);
+      self.warn("The request to " + options.url + " was unsuccesful " + xhr.statusText);
       deferred.reject(response);
       return;
     }
@@ -34704,10 +34397,16 @@ CORS.makeCORSRequest = function(options) {
     self.bug("There was an error making the CORS request to " + options.url + " from " + window.location.href + " the app will not function normally. Please report this.");
     deferred.reject(e);
   };
-  if (options.data) {
-    xhr.send(JSON.stringify(options.data));
-  } else {
-    xhr.send();
+  try {
+    if (options.data) {
+      self.debug("sending ", options.data);
+      xhr.send(options.data);
+    } else {
+      xhr.send();
+    }
+  } catch (e) {
+    self.warn("Caught an exception when calling send on xhr", e);
+    deferred.reject(e);
   }
 
   return deferred.promise;
@@ -34715,7 +34414,7 @@ CORS.makeCORSRequest = function(options) {
 
 exports.CORS = CORS;
 
-},{"q":76}],2:[function(require,module,exports){
+},{"q":78}],2:[function(require,module,exports){
 var Diacritics = require("diacritic");
 var FieldDBObject = require("./FieldDBObject").FieldDBObject;
 
@@ -35571,7 +35270,7 @@ Collection.prototype = Object.create(Object.prototype, {
 
 exports.Collection = Collection;
 
-},{"./FieldDBObject":4,"diacritic":75}],3:[function(require,module,exports){
+},{"./FieldDBObject":4,"diacritic":77}],3:[function(require,module,exports){
 var Q = require("q");
 var CORS = require("./CORS").CORS;
 
@@ -35721,7 +35420,7 @@ if (exports) {
   exports.FieldDBConnection = FieldDBConnection;
 }
 
-},{"./CORS":1,"q":76}],4:[function(require,module,exports){
+},{"./CORS":1,"q":78}],4:[function(require,module,exports){
 var process=require("__browserify_process");/* globals alert, confirm, navigator, Android */
 var CORS = require("./CORS").CORS;
 var Diacritics = require("diacritic");
@@ -35843,11 +35542,6 @@ var FieldDBObject = function FieldDBObject(json) {
     this.dateCreated = Date.now();
   }
 
-  if (!this.render) {
-    this.render = function(options) {
-      this.warn("Rendering, but the render was not injected for this " + this.fieldDBtype, options);
-    };
-  }
 };
 
 FieldDBObject.software = {};
@@ -35859,6 +35553,10 @@ FieldDBObject.DEFAULT_ARRAY = [];
 FieldDBObject.DEFAULT_COLLECTION = [];
 FieldDBObject.DEFAULT_VERSION = "v" + package.version;
 FieldDBObject.DEFAULT_DATE = 0;
+
+FieldDBObject.render = function(options) {
+  this.warn("Rendering, but the render was not injected for this " + this.fieldDBtype, options);
+};
 
 FieldDBObject.bug = function(message) {
   try {
@@ -36122,6 +35820,14 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
     }
   },
 
+  render: {
+    configurable: true,
+    value: function(options) {
+      this.debug("Calling render with options", options);
+      FieldDBObject.render.apply(this, arguments);
+    }
+  },
+
   save: {
     value: function(optionalUserWhoSaved) {
       var deferred = Q.defer(),
@@ -36129,10 +35835,16 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
 
       if (this.fetching) {
         self.warn("Fetching is in process, can't save right now...");
+        Q.nextText(function() {
+          deferred.reject("Fetching is in process, can't save right now...");
+        });
         return;
       }
       if (this.saving) {
         self.warn("Save was already in process...");
+        Q.nextText(function() {
+          deferred.reject("Fetching is in process, can't save right now...");
+        });
         return;
       }
       this.saving = true;
@@ -36830,7 +36542,7 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
       delete json.perObjectAlwaysConfirmOkay;
       delete json.application;
       delete json.contextualizer;
-      if (this._collection !== "private_corpuses") {
+      if (this.collection !== "private_corpuses") {
         delete json.confidential;
         delete json.confidentialEncrypter;
       } else {
@@ -36844,6 +36556,22 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
     }
   },
 
+
+  addRelatedData: {
+    value: function(json) {
+      var relatedData;
+      if (this.datumFields && this.datumFields.relatedData) {
+        relatedData = this.datumFields.relatedData.json.relatedData || [];
+      } else if (this.relatedData) {
+        relatedData = this.relatedData;
+      } else {
+        this.relatedData = relatedData = [];
+      }
+
+      json.relation = "associated file";
+      relatedData.push(json);
+    }
+  },
 
   /**
    * Creates a deep copy of the object (not a reference)
@@ -36867,6 +36595,10 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
       var source = json._id;
       if (json._rev) {
         source = source + "?rev=" + json._rev;
+      } else {
+        if (this.parent && this.parent._rev) {
+          source = this.parent._id + "?rev=" + this.parent._rev;
+        }
       }
       relatedData.push({
         URI: source,
@@ -36876,6 +36608,7 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
       /* Clear the current object's info which we shouldnt clone */
       delete json._id;
       delete json._rev;
+      delete json.parent;
 
       return json;
     }
@@ -36955,7 +36688,7 @@ FieldDBObject.prototype = Object.create(Object.prototype, {
 
 exports.FieldDBObject = FieldDBObject;
 
-},{"./../package.json":79,"./CORS":1,"__browserify_process":64,"diacritic":75,"q":76}],5:[function(require,module,exports){
+},{"./../package.json":82,"./CORS":1,"__browserify_process":66,"diacritic":77,"q":78}],5:[function(require,module,exports){
 var Router = Router || {};
 
 Router.routes = Router.routes || [];
@@ -38747,7 +38480,7 @@ App.prototype = Object.create(FieldDBObject.prototype, /** @lends App.prototype 
 });
 exports.App = App;
 
-},{"./../FieldDBObject":4,"./../Router":5,"./../activity/Activity":6,"./../corpus/Corpus":16,"./../data_list/DataList":22,"./../import/Import":41,"./../locales/Contextualizer":43,"./../search/Search":48,"./../user/Team":54,"./../user/User":55,"./../user/UserMask":56,"q":76}],8:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./../Router":5,"./../activity/Activity":6,"./../corpus/Corpus":17,"./../data_list/DataList":23,"./../import/Import":42,"./../locales/Contextualizer":44,"./../search/Search":49,"./../user/Team":55,"./../user/User":56,"./../user/UserMask":57,"q":78}],8:[function(require,module,exports){
 var App = require("./App").App;
 
 /**
@@ -38969,10 +38702,10 @@ AudioPlayer.prototype = Object.create(Object.prototype, /** @lends AudioPlayer.p
 
 exports.AudioPlayer = AudioPlayer;
 
-},{"./HTML5Audio":12}],10:[function(require,module,exports){
+},{"./HTML5Audio":13}],10:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 var AudioPlayer = require("./AudioPlayer").AudioPlayer;
-
+var mime = require("browserify-mime");
 /**
  * @class The AudioVideo is a type of FieldDBObject with any additional fields or
  * metadata that a team might use to ground/tag their primary data.
@@ -38990,7 +38723,7 @@ var AudioVideo = function AudioVideo(options) {
   FieldDBObject.apply(this, arguments);
 };
 
-var DEFAULT_BASE_SPEECH_URL = "https://localhost:6984";
+var DEFAULT_BASE_SPEECH_URL = "https://localhost:3184";
 AudioVideo.prototype = Object.create(FieldDBObject.prototype, /** @lends AudioVideo.prototype */ {
   constructor: {
     value: AudioVideo
@@ -39062,10 +38795,17 @@ AudioVideo.prototype = Object.create(FieldDBObject.prototype, /** @lends AudioVi
     }
   },
 
+  guessType: {
+    value: function(filename) {
+      var guessedType = mime.lookup(filename);
+      return guessedType;
+    }
+  },
+
   type: {
     get: function() {
       if (!this._type && this.filename) {
-        this._type = "audio/" + this.filename.split(".").pop();
+        this._type = this.guessType(this.filename);
       }
       return this._type || FieldDBObject.DEFAULT_STRING;
     },
@@ -39075,7 +38815,7 @@ AudioVideo.prototype = Object.create(FieldDBObject.prototype, /** @lends AudioVi
       }
       this.warn("type cannot be set, it is automatically determined from the filename. Not using: " + value);
       if (this.filename) {
-        value = "audio/" + this.filename.split(".").pop();
+        value = this.guessType(this.filename);
         this._type = value;
       }
     }
@@ -39086,6 +38826,7 @@ AudioVideo.prototype = Object.create(FieldDBObject.prototype, /** @lends AudioVi
       this.debug("Customizing toJSON ", includeEvenEmptyAttributes, removeEmptyAttributes);
       var json = FieldDBObject.prototype.toJSON.apply(this, arguments);
       delete json.audioPlayer;
+      json.type = this.type;
 
       return json;
     }
@@ -39095,7 +38836,409 @@ AudioVideo.prototype = Object.create(FieldDBObject.prototype, /** @lends AudioVi
 });
 exports.AudioVideo = AudioVideo;
 
-},{"./../FieldDBObject":4,"./AudioPlayer":9}],11:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./AudioPlayer":9,"browserify-mime":64}],11:[function(require,module,exports){
+/* globals document, window, navigator, FieldDB, Media, FileReader */
+var Q = require("q");
+var RecordMP3 = require("recordmp3js/js/recordmp3");
+
+/**
+ * @class AudioVideoRecorder is a minimal customization of the HTML5 media controller
+ *
+ * @name AudioVideoRecorder
+ *
+ * @extends Object
+ * @constructs
+ */
+var AudioVideoRecorder = function AudioVideoRecorder(options) {
+  if (!this._fieldDBtype) {
+    this._fieldDBtype = "AudioVideoRecorder";
+  }
+  if (this.options) {
+    console.log("AudioVideoRecorder was created with options but it doesnt accept options", options);
+  }
+  if (options && options.element) {
+    this.element = options.element;
+  }
+
+  Object.apply(this, arguments);
+};
+AudioVideoRecorder.Recorder = RecordMP3.Recorder;
+
+AudioVideoRecorder.prototype = Object.create(Object.prototype, /** @lends AudioVideoRecorder.prototype */ {
+  constructor: {
+    value: AudioVideoRecorder
+  },
+
+  isRecording: {
+    configurable: true,
+    get: function() {
+      return this._isRecording;
+    }
+  },
+
+  element: {
+    get: function() {
+      if (this.recorder) {
+        return this.recorder.element;
+      } else {
+        return null;
+      }
+    },
+    set: function(element) {
+      if (!element) {
+        console.warn("Cannot create an audio recorder, element was not passed in.");
+        return;
+      }
+      try {
+        this.recorder = new RecordMP3.Recorder({
+          element: element
+        });
+      } catch (e) {
+        console.warn("Cannot create an audio recorder.", e);
+      }
+    }
+  },
+
+  parent: {
+    get: function() {
+      if (this.recorder) {
+        return this.recorder.parent;
+      } else {
+        return null;
+      }
+    },
+    set: function(parent) {
+      if (!parent || !this.recorder) {
+        console.warn("Cannot set parent on a missing audio recorder, parent was not passed in.");
+        return;
+      }
+      this.recorder.parent = RecordMP3.parent = parent;
+    }
+  },
+
+  isPaused: {
+    configurable: true,
+    get: function() {
+      return this._isPaused;
+    }
+  },
+
+  recorderStartTime: {
+    configurable: true,
+    get: function() {
+      if (this._recordingStartTime) {
+        return this._recordingStartTime;
+      } else {
+        return 0;
+      }
+    }
+  },
+
+  isCordova: {
+    configurable: true,
+    get: function() {
+      // return false;
+      try {
+        if (!Media) {
+          console.log("We are most likely in Cordova, using Cordova instead of HTML5 audio");
+        }
+        return true;
+      } catch (e) {
+        console.log("We are most likely not in Cordova, using HTML5 audio", e);
+        return false;
+      }
+    }
+  },
+
+  getDuration: {
+    configurable: true,
+    value: function() {
+      return 0;
+    }
+  },
+
+  microphoneCheck: {
+    value: function() {
+      this.peripheralsCheck(false);
+    }
+  },
+  videoCheck: {
+    value: function() {
+      this.peripheralsCheck(true);
+    }
+  },
+  peripheralsCheck: {
+    value: function(withVideo, optionalElements) {
+      var application = {},
+        deferred = Q.defer(),
+        self = this;
+
+      if (FieldDB && FieldDB.FieldDBObject && FieldDB.FieldDBObject.application) {
+        application = FieldDB.FieldDBObject.application;
+      }
+      var errorInAudioVideoPeripheralsCheck = function(error) {
+        application.videoRecordingVerified = false;
+        application.audioRecordingVerified = false;
+        deferred.reject(error);
+      };
+
+      Q.nextTick(function() {
+        if(self.peripheralsCheckRunning){
+          deferred.reject("Already running");
+          return;
+        }
+        self.peripheralsCheckRunning = true;
+
+        var waitUntilVideoElementIsRendered = function() {
+          if (!optionalElements) {
+            optionalElements = {
+              image: document.getElementById("video-snapshot"),
+              video: document.getElementById("video-preview"),
+              audio: document.getElementById("audio-preview"),
+              canvas: document.getElementById("video-snapshot-canvas"),
+            };
+          }
+          if (!optionalElements.canvas) {
+            errorInAudioVideoPeripheralsCheck("video-snapshot-canvas is not present, cant verify peripheralsCheck");
+            return;
+          }
+          optionalElements.canvas.width = 640;
+          optionalElements.canvas.height = 360;
+          var ctx = optionalElements.canvas.getContext("2d");
+          var displayMediaPreview = function(localMediaStream) {
+            if (localMediaStream) {
+              RecordMP3.audio_context = new RecordMP3.AudioContext();
+              RecordMP3.audio_source = RecordMP3.audio_context.createMediaStreamSource(localMediaStream);
+            }
+
+            if (withVideo) {
+              optionalElements.video.removeAttribute("hidden");
+              optionalElements.image.removeAttribute("hidden");
+              optionalElements.video.removeAttribute("class");
+              optionalElements.image.removeAttribute("class");
+              self.type = "video";
+              optionalElements.video.src = window.URL.createObjectURL(localMediaStream);
+            } else {
+              self.type = "audio";
+              optionalElements.audio.removeAttribute("hidden");
+              optionalElements.audio.removeAttribute("class");
+              optionalElements.audio.src = window.URL.createObjectURL(localMediaStream);
+            }
+
+            var takeSnapshot = function takeSnapshot() {
+              if (localMediaStream) {
+                ctx.drawImage(optionalElements.video, 0, 0);
+                // "image/webp" works in Chrome.
+                // Other browsers will fall back to image/png.
+                optionalElements.image.src = optionalElements.canvas.toDataURL("image/webp");
+              }
+            };
+            optionalElements.video.addEventListener("click", takeSnapshot, false);
+
+
+            // Note: onloadedmetadata doesn't fire in Chrome when using it with getUserMedia.
+            // See crbug.com/110938.
+            var onmedialoaded = function(e) {
+              // Ready to go. Do some stuff.
+              console.log("Video preview is working, take note of this in application so user can continue to the game.", e);
+              application.videoRecordingVerified = true;
+              application.audioRecordingVerified = true;
+              console.log("Turning of audio feedback since confirmed that the audio works.");
+              optionalElements.audio.muted = true;
+              optionalElements.video.muted = true;
+              navigator.geolocation.getCurrentPosition(function(position) {
+                console.warn("recieved position information");
+                if (FieldDB && FieldDB.FieldDBObject) {
+                  FieldDB.FieldDBObject.software = FieldDB.FieldDBObject.software || {};
+                  FieldDB.FieldDBObject.software.location = position.coords;
+                }
+              });
+
+              deferred.resolve("user clicked okay");
+            };
+            optionalElements.audio.onloadeddata = onmedialoaded;
+            optionalElements.audio.onloadedmetadata = onmedialoaded;
+            optionalElements.video.onloadeddata = onmedialoaded;
+            optionalElements.video.onloadedmetadata = onmedialoaded;
+
+          };
+
+          if (application.videoRecordingVerified) {
+            displayMediaPreview();
+            deferred.resolve();
+            return;
+          }
+
+          /* access camera and microphone
+              http://www.html5rocks.com/en/tutorials/getusermedia/intro/
+           */
+          navigator.getUserMedia = navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia;
+
+          if (!navigator.getUserMedia) {
+            errorInAudioVideoPeripheralsCheck("The Microphone/Camera is not supported in your browser.");
+            return;
+          }
+
+          var errorCallback = function(e) {
+            console.warn("Error in peripheralsCheck", e);
+            errorInAudioVideoPeripheralsCheck("User refused access to camera and microphone!", e);
+            return;
+          };
+
+          navigator.getUserMedia({
+              video: {
+                mandatory: {
+                  maxWidth: optionalElements.canvas.width,
+                  maxHeight: optionalElements.canvas.height
+                }
+              },
+              audio: true,
+              geolocation: true
+            },
+            displayMediaPreview,
+            errorCallback
+          );
+        };
+
+        if (!optionalElements.video) {
+          console.warn("waiting for the video preview to get rendered, did you forget to declare it somewhere? ");
+          window.setTimeout(waitUntilVideoElementIsRendered, 2000);
+        } else {
+          waitUntilVideoElementIsRendered();
+        }
+      });
+      return deferred.promise;
+    }
+  },
+  record: {
+    configurable: true,
+    value: function(optionalSource, optionalDelay) {
+      console.log("todo record " + this._src + " optionalSource " + optionalSource + " optionalDelay " + optionalDelay);
+    }
+  },
+
+  pause: {
+    configurable: true,
+    value: function() {
+      console.log("todo pause recording");
+    }
+  },
+
+  togglePause: {
+    configurable: true,
+    value: function() {
+      console.log("todo toogle pause recording");
+    }
+  },
+
+  stop: {
+    configurable: true,
+    value: function(optionalFormat) {
+      var deferred = Q.defer();
+      Q.nextTick(function() {
+        console.log("todo stop recording", optionalFormat);
+      });
+      return deferred.promise;
+    }
+  },
+
+  exportRecording: {
+    configurable: true,
+    value: function(optionalFormat) {
+      var deferred = Q.defer();
+      Q.nextTick(function() {
+        console.log("todo export recording", optionalFormat);
+      });
+      return deferred.promise;
+    }
+  },
+
+  /**
+   * Creates an audio element and uploads the file, and makes it so you can download the file.
+   * @param  {RecordMP3.Recorder} recorder Reference to the recorder object (this function is called in a cllback in the recorder)
+   * @param  {Blob} mp3Data  [description]
+   * @param  {DOMElement} element  [description]
+   * @return {Promise}          [description]
+   */
+  showFile: {
+    configurable: true,
+    value: function(recorder, mp3Data, element) {
+      var deferred = Q.defer(),
+        callingContext = this;
+      console.log("showing file on ", element);
+      Q.nextTick(function() {
+        // callingContext. = "Uploading";
+        var reader = new FileReader();
+        reader.onload = function(event) {
+          // var fd = new FormData();
+          var mp3Name = "audio_recording_" + new Date().getTime() + ".mp3";
+          // var xhr = new XMLHttpRequest();
+          var url = event.target.result;
+
+          // Add audio element and download URL to page.
+          var showAudioArea = document.createElement("p");
+          var au = document.createElement("audio");
+          au.classList = ["fielddb-audio-temp-play-audio"];
+          var hf = document.createElement("a");
+          hf.classList = ["fielddb-audio-temp-save-link"];
+          hf.innerText = "Save to this device";
+          au.controls = true;
+          au.src = url;
+          hf.href = url;
+          hf.download = mp3Name;
+          hf.innerHTML = mp3Name;
+          showAudioArea.appendChild(au);
+          au.play();
+          showAudioArea.appendChild(hf);
+          console.log("todo dont need to append this audio after upload");
+
+          element.appendChild(showAudioArea);
+          callingContext.parent.addFile({
+            filename: mp3Name,
+            description: "Recorded using spreadsheet app",
+            data: url
+          });
+          // callingContext.status += "\nmp3name = " + mp3Name;
+          // fd.append("filename", encodeURIComponent(mp3Name));
+
+          // xhr.open("POST", new FieldDB.AudioVideo().BASE_SPEECH_URL + "/upload/extract/utterances", true);
+          // xhr.onreadystatechange = function(response) {
+          //   console.log(response);
+          //   if (xhr.readyState === 4) {
+          //     // callingContext.status += "\nMP3 uploaded.";
+          //     // recorder.clear();
+
+          //   }
+          //   console.warn("dont clear if upload fialed");
+          // };
+          // xhr.send(fd);
+            recorder.clear();
+        };
+        reader.readAsDataURL(mp3Data);
+
+      });
+      return deferred.promise;
+    }
+  }
+
+});
+
+
+RecordMP3.workerPath = "bower_components/recordmp3js/";
+RecordMP3.showFile = AudioVideoRecorder.prototype.showFile;
+try {
+  RecordMP3.AudioContext = window.AudioContext;
+  RecordMP3.URL = window.URL;
+} catch (e) {
+  console.warn("Audio recorder won't work, AudioContext is not defined", e);
+}
+
+exports.AudioVideoRecorder = AudioVideoRecorder;
+
+},{"q":78,"recordmp3js/js/recordmp3":79}],12:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var AudioVideo = require("./AudioVideo").AudioVideo;
 
@@ -39146,7 +39289,7 @@ AudioVideos.prototype = Object.create(Collection.prototype, /** @lends AudioVide
 });
 exports.AudioVideos = AudioVideos;
 
-},{"./../Collection":2,"./AudioVideo":10}],12:[function(require,module,exports){
+},{"./../Collection":2,"./AudioVideo":10}],13:[function(require,module,exports){
 /* globals window */
 
 /**
@@ -39384,7 +39527,7 @@ HTML5Audio.prototype = Object.create(Object.prototype, /** @lends HTML5Audio.pro
 
 exports.HTML5Audio = HTML5Audio;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
 /**
@@ -39485,7 +39628,7 @@ Comment.prototype = Object.create(FieldDBObject.prototype, /** @lends Comment.pr
 
 exports.Comment = Comment;
 
-},{"./../FieldDBObject":4}],14:[function(require,module,exports){
+},{"./../FieldDBObject":4}],15:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var Comment = require("./Comment").Comment;
 
@@ -39533,7 +39676,7 @@ Comments.prototype = Object.create(Collection.prototype, /** @lends Comments.pro
 });
 exports.Comments = Comments;
 
-},{"./../Collection":2,"./Comment":13}],15:[function(require,module,exports){
+},{"./../Collection":2,"./Comment":14}],16:[function(require,module,exports){
 /* globals window */
 var AES = require("crypto-js/aes");
 var CryptoEncoding = require("crypto-js/enc-utf8");
@@ -39717,10 +39860,11 @@ Confidential.prototype = Object.create(FieldDBObject.prototype, /** @lends Confi
 
 exports.Confidential = Confidential;
 
-},{"./../FieldDBObject":4,"atob":62,"btoa":65,"crypto-js/aes":66,"crypto-js/enc-utf8":70}],16:[function(require,module,exports){
+},{"./../FieldDBObject":4,"atob":63,"btoa":67,"crypto-js/aes":68,"crypto-js/enc-utf8":72}],17:[function(require,module,exports){
 /* global window, OPrime */
 var CorpusMask = require("./CorpusMask").CorpusMask;
 var Datum = require("./../datum/Datum").Datum;
+var DatumField = require("./../datum/DatumField").DatumField;
 var DatumFields = require("./../datum/DatumFields").DatumFields;
 var Session = require("./../FieldDBObject").FieldDBObject;
 var Speaker = require("./../user/Speaker").Speaker;
@@ -40168,7 +40312,7 @@ Corpus.prototype = Object.create(CorpusMask.prototype, /** @lends Corpus.prototy
 
         self.fetchCollection(self.api).then(function(corpora) {
           self.debug(corpora);
-          if (corpora.length > 0) {
+          if (corpora.length === 1) {
             self.runningloadOrCreateCorpusByPouchName = false;
             delete self.loadOrCreateCorpusByPouchNameDeferred;
             self.id = corpora[0]._id;
@@ -40178,6 +40322,8 @@ Corpus.prototype = Object.create(CorpusMask.prototype, /** @lends Corpus.prototy
             }, function(reason) {
               deferred.reject(reason);
             });
+          } else if (corpora.length > 0) {
+            console.warn("Impossibel to have more than one corpus for this dbname");
           } else {
             tryAgainInCaseThereWasALag(corpora);
           }
@@ -40383,6 +40529,18 @@ Corpus.prototype = Object.create(CorpusMask.prototype, /** @lends Corpus.prototy
         deferred.resolve(datum);
       });
       return deferred.promise;
+    }
+  },
+
+  newDatumField: {
+    value: function(field) {
+      if (!field.id && field.label) {
+        field.id = field.label;
+      }
+      if (!(field instanceof DatumField)) {
+        field = new DatumField(field);
+      }
+      this.datumFields.add(field);
     }
   },
 
@@ -40952,7 +41110,7 @@ Corpus.prototype = Object.create(CorpusMask.prototype, /** @lends Corpus.prototy
 exports.Corpus = Corpus;
 exports.FieldDatabase = Corpus;
 
-},{"./../Collection":2,"./../FieldDBObject":4,"./../datum/Datum":24,"./../datum/DatumFields":26,"./../user/Speaker":53,"./CorpusMask":17,"./corpus.json":20,"./psycholinguistics-corpus.json":21,"q":76}],17:[function(require,module,exports){
+},{"./../Collection":2,"./../FieldDBObject":4,"./../datum/Datum":25,"./../datum/DatumField":26,"./../datum/DatumFields":27,"./../user/Speaker":54,"./CorpusMask":18,"./corpus.json":21,"./psycholinguistics-corpus.json":22,"q":78}],18:[function(require,module,exports){
 var Confidential = require("./../confidentiality_encryption/Confidential").Confidential;
 var Database = require("./Database").Database;
 var DatumFields = require("./../datum/DatumFields").DatumFields;
@@ -41234,7 +41392,12 @@ CorpusMask.prototype = Object.create(Database.prototype, /** @lends CorpusMask.p
   preferredDatumTemplate: {
     get: function() {
       if (this.prefs && this.prefs.preferredDatumTemplate) {
-        return this.prefs.preferredDatumTemplate;
+        var upgradeSucess = this.upgradeCorpusFieldsToMatchDatumTemplate(this.prefs.preferredDatumTemplate);
+        if (!upgradeSucess) {
+          return this.prefs.preferredDatumTemplate;
+        } else {
+          this.warn("preferredDatumTemplate is no longer needed");
+        }
       }
     },
     set: function(value) {
@@ -41248,7 +41411,79 @@ CorpusMask.prototype = Object.create(Database.prototype, /** @lends CorpusMask.p
         return;
       }
       this.prefs = this.prefs || new this.INTERNAL_MODELS["prefs"]();
-      this.prefs.preferredDatumTemplate = value.trim();
+      var upgradeSucess = this.upgradeCorpusFieldsToMatchDatumTemplate(value.trim());
+      if (!upgradeSucess) {
+        this.prefs.preferredDatumTemplate = value.trim();
+      } else {
+        this.warn("preferredDatumTemplate is no longer needed");
+      }
+    }
+  },
+
+  upgradeCorpusFieldsToMatchDatumTemplate: {
+    value: function(value) {
+      if (this.preferredDatumTemplateAtVersion) {
+        return true;
+      }
+      if (!this.datumFields.reorder) {
+        this.warn("could not upgrade corpus fields order to match data entry template for the spreadsheet app ");
+        return false;
+      }
+      this.preferredDatumTemplateAtVersion = this.version;
+      this.preferredDatumTemplate = null;
+
+      var order = ["judgement", "utterance", "morphemes", "gloss", "translation", "validationStatus", "tags"];
+      if (value === "compacttemplate") {
+        order = ["judgement", "utterance", "morphemes", "gloss", "translation"];
+
+      } else if (value === "fulltemplate") {
+        order = ["judgement", "utterance", "morphemes", "gloss", "translation", "validationStatus", "tags"];
+
+      } else if (value === "mcgillfieldmethodsspring2014template") {
+        order = ["judgement", "utterance", "morphemes", "gloss", "translation", "validationStatus", "tags"];
+
+      } else if (value === "mcgillfieldmethodsfall2014template") {
+        order = ["judgement", "utterance", "morphemes", "gloss", "translation", "phonetic", "notes"];
+
+      } else if (value === "yalefieldmethodsspring2014template") {
+        order = ["judgement", "orthography", "utterance", "morphemes", "gloss", "translation", "spanish", "Housekeeping", "tags"];
+        this.prefs.fullTemplateDefaultNumberOfFieldsPerColumn = 4;
+      }
+
+
+      var fieldTemplate = {
+        "label": "",
+        "shouldBeEncrypted": false,
+        "showToUserTypes": "all",
+        "defaultfield": false,
+        "value": "",
+        "mask": "",
+        "json": {},
+        "help": "You can add help/conventions here which explain what this data entry field is for your teammates."
+      };
+      for (var expectedPosition = 0; expectedPosition < order.length; expectedPosition++) {
+        var currentPosition = this.datumFields.indexOf(order[expectedPosition]);
+        if (currentPosition === -1) {
+          var newField = JSON.parse(JSON.stringify(fieldTemplate));
+          // newField.id = order[expectedPosition];
+          newField.label = order[expectedPosition];
+          this.datumFields.add(newField);
+          currentPosition = this.datumFields.length - 1;
+        }
+        if (currentPosition === expectedPosition) {
+          this.debug(order[expectedPosition] + " Field was in the correct order. ");
+        } else {
+          this.debug(currentPosition + " moving to" + expectedPosition);
+
+          this.datumFields.reorder(currentPosition, expectedPosition);
+        }
+      }
+      var resultingOrder = this.datumFields.map(function(field) {
+        return field.id;
+      });
+      this.warn("reordered fields to " + resultingOrder);
+
+      return true;
     }
   },
 
@@ -41296,11 +41531,11 @@ CorpusMask.prototype = Object.create(Database.prototype, /** @lends CorpusMask.p
 
   preferredTemplate: {
     get: function() {
-      this.warn("preferredTemplate is deprecated, use dbname instead.");
+      this.warn("preferredTemplate is deprecated, use preferredDatumTemplate instead.");
       return this.preferredDatumTemplate;
     },
     set: function(value) {
-      this.warn("preferredTemplate is deprecated, please use dbname instead.");
+      this.warn("preferredTemplate is deprecated, please use preferredDatumTemplate instead.");
       this.preferredDatumTemplate = value;
     }
   }
@@ -41308,7 +41543,7 @@ CorpusMask.prototype = Object.create(Database.prototype, /** @lends CorpusMask.p
 });
 exports.CorpusMask = CorpusMask;
 
-},{"./../Collection":2,"./../FieldDBObject":4,"./../comment/Comments":14,"./../confidentiality_encryption/Confidential":15,"./../datum/DatumFields":26,"./../datum/DatumStates":28,"./../datum/DatumTags":30,"./../user/UserPreference":57,"./Database":18,"./corpus.json":20}],18:[function(require,module,exports){
+},{"./../Collection":2,"./../FieldDBObject":4,"./../comment/Comments":15,"./../confidentiality_encryption/Confidential":16,"./../datum/DatumFields":27,"./../datum/DatumStates":29,"./../datum/DatumTags":31,"./../user/UserPreference":58,"./Database":19,"./corpus.json":21}],19:[function(require,module,exports){
 /* globals localStorage */
 
 var Q = require("q");
@@ -41563,7 +41798,8 @@ Database.prototype = Object.create(FieldDBObject.prototype, /** @lends Database.
       try {
         connectionInfo = localStorage.getItem("_connectionInfo");
       } catch (e) {
-        this.warn("Localstorage is not available, using the object there will be no persistance across loads", e, this._connectionInfo);
+        this.warn("Localstorage is not available, using the object there will be no persistance across loads");
+        this.debug("Localstorage is not available, using the object there will be no persistance across loads", e, this._connectionInfo);
         connectionInfo = this._connectionInfo;
       }
       if (!connectionInfo) {
@@ -41748,7 +41984,7 @@ Database.prototype = Object.create(FieldDBObject.prototype, /** @lends Database.
 
 exports.Database = Database;
 
-},{"../CORS":1,"../FieldDBObject":4,"./../confidentiality_encryption/Confidential":15,"q":76}],19:[function(require,module,exports){
+},{"../CORS":1,"../FieldDBObject":4,"./../confidentiality_encryption/Confidential":16,"q":78}],20:[function(require,module,exports){
 var FieldDBDatabase = require("./Database").Database;
 
 var PsycholinguisticsDatabase = function PsycholinguisticsDatabase(options) {
@@ -41772,7 +42008,7 @@ PsycholinguisticsDatabase.prototype = Object.create(FieldDBDatabase.prototype, /
 
 exports.PsycholinguisticsDatabase = PsycholinguisticsDatabase;
 
-},{"./Database":18}],20:[function(require,module,exports){
+},{"./Database":19}],21:[function(require,module,exports){
 module.exports={
   "title": "",
   "titleAsUrl": "",
@@ -42401,7 +42637,7 @@ module.exports={
   }]
 }
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 module.exports={
   "description": "This is first database which contains the results of your experiment, you can use it to play with the app... When you want to make a real database, click New : Database/Corpus",
   "participantFields": [ {
@@ -42431,7 +42667,7 @@ module.exports={
   }]
 }
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /* globals FieldDB */
 var Datum = require("./../datum/Datum").Datum;
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
@@ -42783,7 +43019,7 @@ DataList.prototype = Object.create(FieldDBObject.prototype, /** @lends DataList.
 
 exports.DataList = DataList;
 
-},{"./../FieldDBObject":4,"./../comment/Comments":14,"./../datum/Datum":24,"./../datum/Document":31,"./../datum/DocumentCollection":32,"./../locales/ContextualizableObject":42,"q":76}],23:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./../comment/Comments":15,"./../datum/Datum":25,"./../datum/Document":32,"./../datum/DocumentCollection":33,"./../locales/ContextualizableObject":43,"q":78}],24:[function(require,module,exports){
 var DataList = require("./DataList").DataList;
 var DocumentCollection = require("./../datum/DocumentCollection").DocumentCollection;
 var Comments = require("./../comment/Comments").Comments;
@@ -42874,9 +43110,10 @@ SubExperimentDataList.prototype = Object.create(DataList.prototype, /** @lends S
 });
 exports.SubExperimentDataList = SubExperimentDataList;
 
-},{"./../comment/Comments":14,"./../datum/DocumentCollection":32,"./../locales/ContextualizableObject":42,"./DataList":22}],24:[function(require,module,exports){
+},{"./../comment/Comments":15,"./../datum/DocumentCollection":33,"./../locales/ContextualizableObject":43,"./DataList":23}],25:[function(require,module,exports){
 /* globals window, $, _ , OPrime*/
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
+var AudioVideo = require("./../audio_video/AudioVideo").AudioVideo;
 var AudioVideos = require("./../audio_video/AudioVideos").AudioVideos;
 var Comments = require("./../comment/Comments").Comments;
 var Datums = require("./../Collection").Collection;
@@ -42975,6 +43212,21 @@ Datum.prototype = Object.create(FieldDBObject.prototype, /** @lends Datum.protot
     set: function(value) {
       this.debug("datumFields is depreacted, just use fields instead");
       return this.fields = value;
+    }
+  },
+
+  addFile: {
+    value: function(newFileDetails) {
+      if (newFileDetails.type.indexOf("audio") === 0) {
+        this.audioVideo.add(newFileDetails);
+      } else if (newFileDetails.type.indexOf("video") === 0) {
+        this.audioVideo.add(newFileDetails);
+      } else if (newFileDetails.type.indexOf("image") === 0) {
+        this.images.add(newFileDetails);
+      } else {
+        var regularizedJSON = new AudioVideo(newFileDetails).toJSON();
+        this.addRelatedData(regularizedJSON);
+      }
     }
   },
 
@@ -44125,7 +44377,7 @@ Datum.prototype = Object.create(FieldDBObject.prototype, /** @lends Datum.protot
 });
 exports.Datum = Datum;
 
-},{"./../Collection":2,"./../FieldDBObject":4,"./../audio_video/AudioVideos":11,"./../comment/Comments":14,"./../image/Images":40,"./DatumField":25,"./DatumFields":26,"./DatumStates":28,"./DatumTags":30}],25:[function(require,module,exports){
+},{"./../Collection":2,"./../FieldDBObject":4,"./../audio_video/AudioVideo":10,"./../audio_video/AudioVideos":12,"./../comment/Comments":15,"./../image/Images":41,"./DatumField":26,"./DatumFields":27,"./DatumStates":29,"./DatumTags":31}],26:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 var Confidential = require("./../confidentiality_encryption/Confidential").Confidential;
 
@@ -44149,9 +44401,9 @@ var Confidential = require("./../confidentiality_encryption/Confidential").Confi
  * @constructs
  */
 var DatumField = function DatumField(options) {
-  if(!this._fieldDBtype){
-		this._fieldDBtype = "DatumField";
-	}
+  if (!this._fieldDBtype) {
+    this._fieldDBtype = "DatumField";
+  }
 
   this.debug("Constructing DatumField ", options);
   // Let encryptedValue and value from serialization be set
@@ -44234,7 +44486,13 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
     },
     set: function(value) {
       this.debug("label is deprecated, instead automatically contextualize a label for appropriate user eg labelFieldLinguists,  labelNonLinguists, labelTranslators, labelComputationalLinguist");
-      this.labelFieldLinguists = value;
+      if (!this.labelFieldLinguists) {
+        if (value && value.length > 2) {
+          this.labelFieldLinguists = value[0].toUpperCase() + value.substring(1, value.length);
+        } else {
+          this.labelFieldLinguists = value;
+        }
+      }
       this.id = value;
     }
   },
@@ -44494,14 +44752,16 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
         return;
       }
       if (!value) {
-        var fieldCanBeDeleted = !this._shouldBeEncrypted || (this._shouldBeEncrypted && this.decryptedMode);
-        if (fieldCanBeDeleted) {
-          delete this._value;
-          delete this._mask;
-          delete this._encryptedValue;
+        var fieldCanBeEmptied = !this._shouldBeEncrypted || (this._shouldBeEncrypted && this.decryptedMode);
+        if (fieldCanBeEmptied) {
+          this._value = "";
+          this._mask = "";
+          this._encryptedValue = "";
           return;
         } else {
-          this.warn("The value was removed by the user, but they are not able to edit the field currently.");
+          if (this._value) {
+            this.warn("The value " + this._value + " of " + this.id + " was requested to be removed by the user, but they are not able to edit the field currently. No changes were made ");
+          }
           return;
         }
       }
@@ -44628,7 +44888,7 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
   help: {
     configurable: true,
     get: function() {
-      return this._help || "Put your team's data entry conventions here (if any)...";
+      return this._helpLinguists || this._help || "Put your team's data entry conventions here (if any)...";
     },
     set: function(value) {
       if (value === this._help) {
@@ -44639,12 +44899,15 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
         return;
       }
       this._help = value.trim();
+      if (!this.helpLinguists) {
+        this.helpLinguists = this._help;
+      }
     }
   },
 
   helpLinguists: {
     get: function() {
-      return this._helpLinguists || "Put your team's data entry conventions here (if any)...";
+      return this._helpLinguists || this.help;
     },
     set: function(value) {
       if (value === this._helpLinguists) {
@@ -44660,7 +44923,7 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
 
   helpNonLinguists: {
     get: function() {
-      return this._helpNonLinguists || "Put your team's data entry conventions here (if any)...";
+      return this._helpNonLinguists || this.help;
     },
     set: function(value) {
       if (value === this._helpNonLinguists) {
@@ -44676,7 +44939,7 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
 
   helpTranslators: {
     get: function() {
-      return this._helpTranslators || "Put your team's data entry conventions here (if any)...";
+      return this._helpTranslators || this.help;
     },
     set: function(value) {
       if (value === this._helpTranslators) {
@@ -44692,7 +44955,7 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
 
   helpComputationalLinguists: {
     get: function() {
-      return this._helpComputationalLinguists || "Put your team's data entry conventions here (if any)...";
+      return this._helpComputationalLinguists || this.help;
     },
     set: function(value) {
       if (value === this._helpComputationalLinguists) {
@@ -44708,7 +44971,7 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
 
   helpDevelopers: {
     get: function() {
-      return this._helpDevelopers || "Put your team's data entry conventions here (if any)...";
+      return this._helpDevelopers || this.help;
     },
     set: function(value) {
       if (value === this._helpDevelopers) {
@@ -44941,11 +45204,19 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
   toJSON: {
     value: function(includeEvenEmptyAttributes, removeEmptyAttributes) {
       this.debug("Customizing toJSON ", includeEvenEmptyAttributes, removeEmptyAttributes);
+      includeEvenEmptyAttributes = true;
       var json = FieldDBObject.prototype.toJSON.apply(this, arguments);
       delete json.dateCreated;
       delete json.dateModified;
       delete json.comments;
       delete json.dbname;
+
+      // TODO eventually dont include the label and hint but now include it for backward compaitibilty
+      json.label = this.id;
+      json.hint = this.hint;
+
+      json.value = this.value || "";
+      json.mask = this.mask || "";
 
       json.id = json._id;
       delete json._id;
@@ -44962,7 +45233,7 @@ DatumField.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumFi
 
 exports.DatumField = DatumField;
 
-},{"./../FieldDBObject":4,"./../confidentiality_encryption/Confidential":15}],26:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./../confidentiality_encryption/Confidential":16}],27:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var DatumField = require("./../datum/DatumField").DatumField;
 
@@ -45006,12 +45277,52 @@ DatumFields.prototype = Object.create(Collection.prototype, /** @lends DatumFiel
 
   capitalizeFirstCharacterOfPrimaryKeys: {
     value: false
+  },
+
+  /**
+   *  Docs/items in a DatumFields are reorderable by default
+   * @type {Boolean}
+   */
+  docsAreReorderable: {
+    get: function() {
+      if (this._docsAreReorderable !== null && this._docsAreReorderable !== undefined) {
+        return this._docsAreReorderable;
+      }
+      return true;
+    },
+    set: function(value) {
+      if (value === null || value === undefined) {
+        delete this._docsAreReorderable;
+        return;
+      }
+      this._docsAreReorderable = value;
+    }
+  },
+
+  /**
+   *  Docs/items in a DatumFields are reorderable by default
+   * @type {Boolean}
+   */
+  showDocPosition: {
+    get: function() {
+      if (this._showDocPosition !== null && this._showDocPosition !== undefined) {
+        return this._showDocPosition;
+      }
+      return true;
+    },
+    set: function(value) {
+      if (value === null || value === undefined) {
+        delete this._showDocPosition;
+        return;
+      }
+      this._showDocPosition = value;
+    }
   }
 
 });
 exports.DatumFields = DatumFields;
 
-},{"./../Collection":2,"./../datum/DatumField":25}],27:[function(require,module,exports){
+},{"./../Collection":2,"./../datum/DatumField":26}],28:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 var UserMask = require("./../user/UserMask").UserMask;
 
@@ -45086,7 +45397,7 @@ DatumState.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumSt
 });
 exports.DatumState = DatumState;
 
-},{"./../FieldDBObject":4,"./../user/UserMask":56}],28:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./../user/UserMask":57}],29:[function(require,module,exports){
 var DatumTags = require("./DatumTags").DatumTags;
 var DatumState = require("./DatumState").DatumState;
 
@@ -45131,7 +45442,7 @@ DatumStates.prototype = Object.create(DatumTags.prototype, /** @lends DatumState
 });
 exports.DatumStates = DatumStates;
 
-},{"./DatumState":27,"./DatumTags":30}],29:[function(require,module,exports){
+},{"./DatumState":28,"./DatumTags":31}],30:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
 /**
@@ -45160,7 +45471,7 @@ DatumTag.prototype = Object.create(FieldDBObject.prototype, /** @lends DatumTag.
 });
 exports.DatumTag = DatumTag;
 
-},{"./../FieldDBObject":4}],30:[function(require,module,exports){
+},{"./../FieldDBObject":4}],31:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var DatumTag = require("./DatumTag").DatumTag;
 
@@ -45206,7 +45517,7 @@ DatumTags.prototype = Object.create(Collection.prototype, /** @lends DatumTags.p
 });
 exports.DatumTags = DatumTags;
 
-},{"./../Collection":2,"./DatumTag":29}],31:[function(require,module,exports){
+},{"./../Collection":2,"./DatumTag":30}],32:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
 var Document = function Document(options) {
@@ -45278,7 +45589,7 @@ Document.prototype = Object.create(FieldDBObject.prototype, /** @lends Document.
 
 exports.Document = Document;
 
-},{"./../FieldDBObject":4}],32:[function(require,module,exports){
+},{"./../FieldDBObject":4}],33:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var Document = require("./Document").Document;
 
@@ -45324,7 +45635,7 @@ DocumentCollection.prototype = Object.create(Collection.prototype, /** @lends Do
 });
 exports.DocumentCollection = DocumentCollection;
 
-},{"./../Collection":2,"./Document":31}],33:[function(require,module,exports){
+},{"./../Collection":2,"./Document":32}],34:[function(require,module,exports){
 var Stimulus = require("./Stimulus").Stimulus,
   Q = require("q");
 
@@ -45590,7 +45901,7 @@ Response.prototype = Object.create(Stimulus.prototype, /** @lends Response.proto
 });
 exports.Response = Response;
 
-},{"./Stimulus":34,"q":76}],34:[function(require,module,exports){
+},{"./Stimulus":35,"q":78}],35:[function(require,module,exports){
 var Datum = require("./Datum").Datum;
 
 /**
@@ -45684,7 +45995,7 @@ Stimulus.prototype = Object.create(Datum.prototype, /** @lends Stimulus.prototyp
 });
 exports.Stimulus = Stimulus;
 
-},{"./Datum":24}],35:[function(require,module,exports){
+},{"./Datum":25}],36:[function(require,module,exports){
 if ("undefined" === typeof window) {
   var window = {};
 }
@@ -45723,7 +46034,7 @@ if ("undefined" === typeof window) {
 
 })(window || exports)
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};/**
  * FieldDB
  * A open ended database for  evolving data collection projects
@@ -45741,13 +46052,17 @@ var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? 
   var PsycholinguisticsApp = require("./app/PsycholinguisticsApp").PsycholinguisticsApp;
   var Export = require("./export/Export");
   var FieldDBObject = require("./FieldDBObject").FieldDBObject;
+  var Collection = require("./Collection").Collection;
   var Document = require("./datum/Document").Document;
   var CORS = require("./CORS").CORS;
   CORS.bug = FieldDBObject.prototype.bug;
   var DataList = require("./data_list/DataList").DataList;
   var SubExperimentDataList = require("./data_list/SubExperimentDataList").SubExperimentDataList;
   var AudioVideo = require("./audio_video/AudioVideo").AudioVideo;
+  var AudioVideos = require("./audio_video/AudioVideos").AudioVideos;
+  var AudioVideoRecorder = require("./audio_video/AudioVideoRecorder").AudioVideoRecorder;
   var Datum = require("./datum/Datum").Datum;
+  var DatumField = require("./datum/DatumField").DatumField;
   var Stimulus = require("./datum/Stimulus").Stimulus;
   var Response = require("./datum/Response").Response;
   var Database = require("./corpus/Database").Database;
@@ -45774,12 +46089,16 @@ var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? 
   FieldDB.PsycholinguisticsApp = PsycholinguisticsApp;
   FieldDB.Export = Export;
   FieldDB.FieldDBObject = FieldDBObject;
+  FieldDB.Collection = Collection;
   FieldDB.Document = Document;
   FieldDB.CORS = CORS;
   FieldDB.DataList = DataList;
   FieldDB.SubExperimentDataList = SubExperimentDataList;
   FieldDB.AudioVideo = AudioVideo;
+  FieldDB.AudioVideos = AudioVideos;
+  FieldDB.AudioVideoRecorder = AudioVideoRecorder;
   FieldDB.Datum = Datum;
+  FieldDB.DatumField = DatumField;
   FieldDB.Stimulus = Stimulus;
   FieldDB.Response = Response;
   FieldDB.Database = Database;
@@ -45814,14 +46133,14 @@ var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? 
   console.log("------------------------------------------------------------------------");
   console.log("-----------------------Welcome to the power user console! Type----------");
   console.log("--------------------------FieldDB.--------------------------------------");
-  // console.log("------------------",FieldDB);
+  console.log("------------------",new FieldDB.FieldDBObject().version);
   // FieldDB["Response"] = Response;
   console.log("---------------------------for available models/functionality-----------");
   console.log("------------------------------------------------------------------------");
   console.log("------------------------------------------------------------------------");
 }(typeof exports === "object" && exports || this));
 
-},{"./CORS":1,"./FieldDBConnection":3,"./FieldDBObject":4,"./Router":5,"./app/App":7,"./app/PsycholinguisticsApp":8,"./audio_video/AudioVideo":10,"./corpus/Corpus":16,"./corpus/CorpusMask":17,"./corpus/Database":18,"./corpus/PsycholinguisticsDatabase":19,"./data_list/DataList":22,"./data_list/SubExperimentDataList":23,"./datum/Datum":24,"./datum/Document":31,"./datum/Response":33,"./datum/Stimulus":34,"./export/Export":35,"./import/Import":41,"./locales/Contextualizer":43,"./search/Search":48,"./user/Consultant":51,"./user/Participant":52,"./user/Speaker":53,"./user/Team":54,"./user/User":55,"./user/UserMask":56,"q":76}],37:[function(require,module,exports){
+},{"./CORS":1,"./Collection":2,"./FieldDBConnection":3,"./FieldDBObject":4,"./Router":5,"./app/App":7,"./app/PsycholinguisticsApp":8,"./audio_video/AudioVideo":10,"./audio_video/AudioVideoRecorder":11,"./audio_video/AudioVideos":12,"./corpus/Corpus":17,"./corpus/CorpusMask":18,"./corpus/Database":19,"./corpus/PsycholinguisticsDatabase":20,"./data_list/DataList":23,"./data_list/SubExperimentDataList":24,"./datum/Datum":25,"./datum/DatumField":26,"./datum/Document":32,"./datum/Response":34,"./datum/Stimulus":35,"./export/Export":36,"./import/Import":42,"./locales/Contextualizer":44,"./search/Search":49,"./user/Consultant":52,"./user/Participant":53,"./user/Speaker":54,"./user/Team":55,"./user/User":56,"./user/UserMask":57,"q":78}],38:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
 /**
@@ -45866,7 +46185,7 @@ HotKey.prototype = Object.create(FieldDBObject.prototype, /** @lends HotKey.prot
 });
 exports.HotKey = HotKey;
 
-},{"./../FieldDBObject":4}],38:[function(require,module,exports){
+},{"./../FieldDBObject":4}],39:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var HotKey = require("./HotKey").HotKey;
 
@@ -45915,7 +46234,7 @@ HotKeys.prototype = Object.create(Collection.prototype, /** @lends HotKeys.proto
 });
 exports.HotKeys = HotKeys;
 
-},{"./../Collection":2,"./HotKey":37}],39:[function(require,module,exports){
+},{"./../Collection":2,"./HotKey":38}],40:[function(require,module,exports){
 var AudioVideo = require("./../audio_video/AudioVideo").AudioVideo;
 
 /**
@@ -45946,7 +46265,7 @@ Image.prototype = Object.create(AudioVideo.prototype, /** @lends Image.prototype
 });
 exports.Image = Image;
 
-},{"./../audio_video/AudioVideo":10}],40:[function(require,module,exports){
+},{"./../audio_video/AudioVideo":10}],41:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var Image = require("./Image").Image;
 
@@ -45985,10 +46304,10 @@ Images.prototype = Object.create(Collection.prototype, /** @lends Images.prototy
 });
 exports.Images = Images;
 
-},{"./../Collection":2,"./Image":39}],41:[function(require,module,exports){
-/* globals OPrime, window, escape, $, FileReader */
-var AudioVideo = require("./../FieldDBObject").FieldDBObject;
-var AudioVideos = require("./../Collection").Collection;
+},{"./../Collection":2,"./Image":40}],42:[function(require,module,exports){
+/* globals window, escape, $, FileReader, FormData, atob,  unescape, Blob */
+var AudioVideo = require("./../audio_video/AudioVideo").AudioVideo;
+var AudioVideos = require("./../audio_video/AudioVideos").AudioVideos;
 var Collection = require("./../Collection").Collection;
 var CORS = require("./../CORS").CORS;
 var Corpus = require("./../corpus/Corpus").Corpus;
@@ -46021,6 +46340,31 @@ var _ = require("underscore");
  * @tutorial tests/CorpusTest.js
  */
 
+//http://stackoverflow.com/questions/4998908/convert-data-uri-to-file-then-append-to-formdata
+var dataURItoBlob = function(dataURI) {
+  // convert base64/URLEncoded data component to raw binary data held in a string
+  var byteString;
+  if (dataURI.split(",")[0].indexOf("base64") >= 0) {
+    byteString = atob(dataURI.split(",")[1]);
+  } else {
+    byteString = unescape(dataURI.split(",")[1]);
+  }
+
+  // separate out the mime component
+  var mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+
+  // write the bytes of the string to a typed array
+  var ia = new Uint8Array(byteString.length);
+  for (var i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+
+  return new Blob([ia], {
+    type: mimeString
+  });
+};
+
+
 
 var getUnique = function(arrayObj) {
   var u = {},
@@ -46044,6 +46388,10 @@ var Import = function Import(options) {
   }
   this.debug(" new import ", options);
   FieldDBObject.apply(this, arguments);
+  this.progress = {
+    total: 0,
+    completed: 0
+  };
 };
 
 Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prototype */ {
@@ -46084,6 +46432,9 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
 
   showImportSecondStep: {
     get: function() {
+      if (this.dontShowSecondStep) {
+        return false;
+      }
       return this.asCSV && this.asCSV.length > 0;
     }
   },
@@ -46233,6 +46584,8 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
         var headers = [];
         if (self.importType === "participants") {
           self.importFields = new DatumFields(self.corpus.participantFields.clone());
+        } else if (self.importType === "audioVideo") {
+          self.importFields = new DatumFields();
         } else {
           self.importFields = new DatumFields(self.corpus.datumFields.clone());
         }
@@ -46245,6 +46598,9 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
             correspondingDatumField[0].id = item;
             if (self.importType === "participants") {
               correspondingDatumField[0].labelExperimenters = item;
+            } else if (self.importType === "audioVideo") {
+              console.log("this is an audioVideo import but we aren doing anything with the csv");
+              // correspondingDatumField[0].labelFieldLinguists = item;
             } else {
               correspondingDatumField[0].labelFieldLinguists = item;
             }
@@ -46336,11 +46692,13 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
               confidential: self.corpus.confidential,
               fields: new DatumFields(JSON.parse(JSON.stringify(headers)))
             });
+          } else if (self.importType === "audioVideo") {
+            docToSave = new AudioVideo();
+            docToSave.description = self.rawText; //TODO look into the textgrid import
           } else {
             docToSave = new Datum({
               datumFields: new DatumFields(JSON.parse(JSON.stringify(headers)))
             });
-
           }
           var testForEmptyness = "";
           for (var index = 0; index < row.length; index++) {
@@ -46359,6 +46717,9 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
             //            }
             if (self.importType === "participants") {
               docToSave.fields[headers[index].id].value = item.trim();
+            } else if (self.importType === "audioVideo") {
+              console.log("this is an audioVideo but we arent doing anything with the headers");
+              // docToSave.datumFields[headers[index].id].value = item.trim();
             } else {
               docToSave.datumFields[headers[index].id].value = item.trim();
             }
@@ -46396,6 +46757,10 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
               self.progress.completed++;
             });
             savePromises.push(promise);
+          } else if (self.importType === "audioVideo") {
+            self.debug("not doing any save for an audio video import");
+          } else {
+            self.debug("not doing any save for a datum import");
           }
         });
 
@@ -46827,8 +47192,11 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
       }
       var rows = text.split("\n");
       if (rows.length < 3) {
-        rows = text.split("\r");
-        this.status = this.status + " Detected a \r line ending.";
+        var macrows = text.split("\r");
+        if (macrows.length > rows.length) {
+          rows = macrows;
+          this.status = this.status + " Detected a \r line ending.";
+        }
       }
       var firstrow = rows[0];
       var hasQuotes = false;
@@ -46854,13 +47222,17 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
       }
       /* get the first line and set it to be the header by default */
       var header = [];
-      if (rows.length > 3) {
+      if (rows.length > 1) {
         firstrow = firstrow;
         if (hasQuotes) {
           header = firstrow.trim().replace(/^"/, "").replace(/"$/, "").split("", "");
         } else {
           header = this.parseLineCSV(firstrow);
         }
+      } else if (rows.length === 1) {
+        header = rows[0].map(function() {
+          return "";
+        });
       }
       this.extractedHeader = header;
 
@@ -47240,61 +47612,221 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
     }
   },
 
+  uploadFiles: {
+    value: function(files) {
+      var deferred = Q.defer(),
+        self = this;
+
+      self.error = "";
+      self.status = "";
+
+      Q.nextTick(function() {
+        var uploadUrl = new AudioVideo().BASE_SPEECH_URL + "/upload/extract/utterances";
+        // var data = {
+        //   files: files,
+        //   token: self.token,
+        //   dbname: self.dbname,
+        //   username: self.username,
+        //   returnTextGrid: self.returnTextGrid
+        // };
+        //
+        var data = new FormData();
+        // for (var ?fileIndex = 0; fileIndex > files.length; fileIndex++) {
+        // data.append("file" + fileIndex, files[fileIndex]);
+        // }
+        // data.files = files;
+        self.todo("use the files passed instead of jquery ", files);
+        // http://stackoverflow.com/questions/24626177/how-to-create-an-image-file-from-a-dataurl
+        if (files.indexOf("data") === 0) {
+          // data.append("data", files); //test new split
+
+
+          // var base64 = files.split("base64,")[1];
+          var blob = dataURItoBlob(files);
+          // blob.name = "file_" + Date.now() + "." + blob.type.split("/")[1];
+          // blob.lastModfied = Date.now();
+          // blob.lastModifiedDate = new Date(blob.lastModfied);
+          // fd.append("canvasImage", blob);
+
+          //http://www.nczonline.net/blog/2012/06/05/working-with-files-in-javascript-part-5-blobs/
+          // var reconstructedFile =  new File("file_" + Date.now() + ".mp3", blob, "audio/mpeg");
+
+          //http://stackoverflow.com/questions/8390855/how-to-instantiate-a-file-object-in-javascript
+          files = [blob];
+
+        }
+        self.rawText = "";
+        $.each(files, function(i, file) {
+          data.append(i, file);
+          if (file.name) {
+            self.rawText = self.rawText + " " + file.name;
+          }
+        });
+        if (self.rawText && self.rawText.trim()) {
+          window.alert("rendering import");
+          self.rawText = self.rawText.trim();
+          self.render();
+        }
+
+        // data.append("files", files);
+        data.append("token", self.uploadtoken);
+        data.append("pouchname", self.dbname);
+        data.append("username", self.username);
+        data.append("returnTextGrid", self.returnTextGrid);
+
+        self.audioVideo = null;
+        // this.model.audioVideo.reset();
+        $.ajax({
+          url: uploadUrl,
+          type: "post",
+          // dataType: 'json',
+          cache: false,
+          // withCredentials: false,
+          contentType: false,
+          processData: false,
+          data: data,
+          success: function(results) {
+            if (results && results.status === 200) {
+              self.uploadDetails = results;
+              self.files = results.files;
+              self.status = "File(s) uploaded and utterances were extracted.";
+              var messages = [];
+              self.rawText = "";
+              /* Check for any textgrids which failed */
+              for (var fileIndex = 0; fileIndex < results.files.length; fileIndex++) {
+                if (results.files[fileIndex].textGridStatus >= 400) {
+                  console.log(results.files[fileIndex]);
+                  var instructions = results.files[fileIndex].textGridInfo;
+                  if (results.files[fileIndex].textGridStatus >= 500) {
+                    instructions = " Please report this error to us at support@lingsync.org ";
+                  }
+                  messages.push("Generating the textgrid for " + results.files[fileIndex].fileBaseName + " seems to have failed. " + instructions);
+                  results.files[fileIndex].filename = results.files[fileIndex].fileBaseName + ".mp3";
+                  results.files[fileIndex].URL = new AudioVideo().BASE_SPEECH_URL + "/" + self.corpus.dbname + "/" + results.files[fileIndex].fileBaseName + ".mp3";
+                  results.files[fileIndex].description = results.files[fileIndex].description || "File from import";
+                  self.addAudioVideoFile(results.files[fileIndex]);
+                } else {
+                  self.downloadTextGrid(results.files[fileIndex]);
+                }
+              }
+              if (messages.length > 0) {
+                self.status = messages.join(", ");
+                deferred.resolve(self.status);
+                // $(self.el).find(".status").html(self.get("status"));
+                // if(window && window.appView && typeof window.appView.toastUser === "function") window.appView.toastUser(messages.join(", "), "alert-danger", "Import:");
+              }
+            } else {
+              console.log(results);
+              var message = "Upload might have failed to complete processing on your file(s). Please report this error to us at support@lingsync.org ";
+              self.status = message + ": " + JSON.stringify(results);
+              deferred.reject(message);
+
+              // if(window && window.appView && typeof window.appView.toastUser === "function") window.appView.toastUser(message, "alert-danger", "Import:");
+            }
+            // $(self.el).find(".status").html(self.get("status"));
+          },
+          error: function(response) {
+            var reason = {};
+            if (response && response.responseJSON) {
+              reason = response.responseJSON;
+            } else {
+              var message = "Error contacting the server. ";
+              if (response.status >= 500) {
+                message = message + " Please report this error to us at support@lingsync.org ";
+              } else if (response.status === 413) {
+                message = message + " Your file is too big for upload, please try using FFMpeg to convert it to an mp3 for upload (you can still use your original video/audio in the app when the utterance chunking is done on an mp3.) ";
+              } else {
+                message = message + " Are you offline? If you are online and you still recieve this error, please report it to us: ";
+              }
+              reason = {
+                status: response.status,
+                userFriendlyErrors: [message + response.status]
+              };
+            }
+            console.log(reason);
+            if (reason && reason.userFriendlyErrors) {
+              self.status = "";
+              self.error = "Upload error: " + reason.userFriendlyErrors.join(" ");
+              self.bug(self.error);
+              // if(window && window.appView && typeof window.appView.toastUser === "function") window.appView.toastUser(reason.userFriendlyErrors.join(" "), "alert-danger", "Import:");
+              // $(self.el).find(".status").html(self.get("status"));
+            }
+            deferred.reject(self.error);
+          }
+        });
+        self.status = "Contacting server...";
+        // $(this.el).find(".status").html(this.model.get("status"));
+
+      });
+      return deferred.promise;
+    }
+  },
 
   downloadTextGrid: {
     value: function(fileDetails) {
       var self = this;
-      var textridUrl = OPrime.audioUrl + "/" + this.pouchname + "/" + fileDetails.fileBaseName + ".TextGrid";
-      $.ajax({
+      var textridUrl = new AudioVideo().BASE_SPEECH_URL + "/" + this.corpus.dbname + "/" + fileDetails.fileBaseName + ".TextGrid";
+      CORS.makeCORSRequest({
         url: textridUrl,
-        type: "get",
-        // dataType: "text",
-        success: function(results) {
-          if (results) {
-            fileDetails.textgrid = results;
-            var syllables = "unknown";
-            if (fileDetails.syllablesAndUtterances && fileDetails.syllablesAndUtterances.syllableCount) {
-              syllables = fileDetails.syllablesAndUtterances.syllableCount;
-            }
-            var pauses = "unknown";
-            if (fileDetails.syllablesAndUtterances && fileDetails.syllablesAndUtterances.pauseCount) {
-              pauses = parseInt(fileDetails.syllablesAndUtterances.pauseCount, 10);
-            }
-            var utteranceCount = 1;
-            if (pauses > 0) {
-              utteranceCount = pauses + 2;
-            }
-            var message = " Downloaded Praat TextGrid which contained a count of roughly " + syllables + " syllables and auto detected utterances for " + fileDetails.fileBaseName + " The utterances were not automatically transcribed for you, you can either save the textgrid and transcribe them using Praat, or continue to import them and transcribe them after.";
-            fileDetails.description = message;
-            self.status = self.status + "<br/>" + message;
-            self.fileDetails = self.status + message;
+        type: "GET",
+        withCredentials: false
+      }).then(function(results) {
+        if (results) {
+          fileDetails.textgrid = results;
+          var syllables = "unknown";
+          if (fileDetails.syllablesAndUtterances && fileDetails.syllablesAndUtterances.syllableCount) {
+            syllables = fileDetails.syllablesAndUtterances.syllableCount;
+          }
+          var pauses = "unknown";
+          if (fileDetails.syllablesAndUtterances && fileDetails.syllablesAndUtterances.pauseCount) {
+            pauses = parseInt(fileDetails.syllablesAndUtterances.pauseCount, 10);
+          }
+          var utteranceCount = 1;
+          if (pauses > 0) {
+            utteranceCount = pauses + 2;
+          }
+          var message = " Downloaded Praat TextGrid which contained a count of roughly " + syllables + " syllables and auto detected utterances for " + fileDetails.fileBaseName + " The utterances were not automatically transcribed for you, you can either save the textgrid and transcribe them using Praat, or continue to import them and transcribe them after.";
+          fileDetails.description = message;
+          self.status = self.status + "<br/>" + message;
+          self.fileDetails = self.status + message;
+          if (window && window.appView && typeof window.appView.toastUser === "function") {
             window.appView.toastUser(message, "alert-info", "Import:");
-            self.rawText = self.rawText.trim() + "\n\n\nFile name = " + fileDetails.fileBaseName + ".mp3\n" + results;
+          }
+          self.rawText = self.rawText.trim() + "\n\n\nFile name = " + fileDetails.fileBaseName + ".mp3\n" + results;
+          if (!self.parent) {
             self.importTextGrid(self.rawText, null);
           } else {
-            self.debug(results);
-            fileDetails.textgrid = "Error result was empty. " + results;
+            self.debug("Not showing second import step, this looks like its audio import only.");
           }
-        },
-        error: function(response) {
-          var reason = {};
-          if (response && response.responseJSON) {
-            reason = response.responseJSON;
+          fileDetails.filename = fileDetails.fileBaseName + ".mp3";
+          fileDetails.URL = new AudioVideo().BASE_SPEECH_URL + "/" + self.corpus.dbname + "/" + fileDetails.fileBaseName + ".mp3";
+          self.addAudioVideoFile(fileDetails);
+          self.rawText = self.rawText.trim();
+
+        } else {
+          self.debug(results);
+          fileDetails.textgrid = "Error result was empty. " + results;
+        }
+      }, function(response) {
+        var reason = {};
+        if (response && response.responseJSON) {
+          reason = response.responseJSON;
+        } else {
+          var message = "Error contacting the server. ";
+          if (response.status >= 500) {
+            message = message + " Please report this error to us at support@lingsync.org ";
           } else {
-            var message = "Error contacting the server. ";
-            if (response.status >= 500) {
-              message = message + " Please report this error to us at support@lingsync.org ";
-            } else {
-              message = message + " Are you offline? If you are online and you still recieve this error, please report it to us: ";
-            }
-            reason = {
-              status: response.status,
-              userFriendlyErrors: [message + response.status]
-            };
+            message = message + " Are you offline? If you are online and you still recieve this error, please report it to us: ";
           }
-          self.debug(reason);
-          if (reason && reason.userFriendlyErrors) {
-            self.status = fileDetails.fileBaseName + "import error: " + reason.userFriendlyErrors.join(" ");
+          reason = {
+            status: response.status,
+            userFriendlyErrors: [message + response.status]
+          };
+        }
+        self.debug(reason);
+        if (reason && reason.userFriendlyErrors) {
+          self.status = fileDetails.fileBaseName + "import error: " + reason.userFriendlyErrors.join(" ");
+          if (window && window.appView && typeof window.appView.toastUser === "function") {
             window.appView.toastUser(reason.userFriendlyErrors.join(" "), "alert-danger", "Import:");
           }
         }
@@ -47303,15 +47835,23 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
   },
 
   addAudioVideoFile: {
-    value: function(url) {
+    value: function(details) {
       if (!this.audioVideo) {
         this.audioVideo = new AudioVideos();
       }
-      this.audioVideo.add(new AudioVideo({
-        filename: url.substring(url.lastIndexOf("/") + 1),
-        URL: url,
-        description: "File from import"
-      }));
+      var audioVideo = new AudioVideo(details);
+      this.audioVideo.add(audioVideo);
+      if (this.parent) {
+        if (!this.parent.audioVideo) {
+          this.parent.audioVideo = new AudioVideos();
+        } else if (Object.prototype.toString.call(this.parent.audioVideo) === "[object Array]") {
+          this.parent.audioVideo = new AudioVideos(this.parent.audioVideo);
+        }
+        this.parent.audioVideo.add(audioVideo);
+        this.parent.saved = "no";
+        this.render();
+        // this.asCSV = [];
+      }
     }
   },
 
@@ -47503,6 +48043,7 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
       this.debug("added a datum to the collection");
     }
   },
+
   /**
    * Reads the import's array of files using a supplied readOptions or using
    * the readFileIntoRawText function which uses the browsers FileReader API.
@@ -47529,13 +48070,16 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
 
         var fileDetails = [];
         var files = self.files;
+        var filesToUpload = [];
 
         self.progress.total = files.length;
         for (var i = 0, file; file = files[i]; i++) {
           var details = [escape(file.name), file.type || "n/a", "-", file.size, "bytes, last modified:", file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() : "n/a"].join(" ");
           self.status = self.status + "; " + details;
           fileDetails.push(JSON.parse(JSON.stringify(file)));
-          if (options.readOptions) {
+          if (file.type && (file.type.indexOf("audio") > -1 || file.type.indexOf("video") > -1 || file.type.indexOf("image") > -1)) {
+            filesToUpload.push(file);
+          } else if (options.readOptions) {
             promisses.push(options.readOptions.readFileFunction.apply(self, [{
               file: file.name,
               start: options.start,
@@ -47550,6 +48094,9 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
           }
         }
 
+        if (filesToUpload.length > 0) {
+          promisses.push(self.uploadFiles(self.files));
+        }
         self.fileDetails = fileDetails;
 
         Q.allSettled(promisses).then(function(results) {
@@ -47741,7 +48288,7 @@ Import.prototype = Object.create(FieldDBObject.prototype, /** @lends Import.prot
 
 exports.Import = Import;
 
-},{"./../CORS":1,"./../Collection":2,"./../FieldDBObject":4,"./../corpus/Corpus":16,"./../data_list/DataList":22,"./../datum/Datum":24,"./../datum/DatumField":25,"./../datum/DatumFields":26,"./../user/Participant":52,"q":76,"textgrid":77,"underscore":78}],42:[function(require,module,exports){
+},{"./../CORS":1,"./../Collection":2,"./../FieldDBObject":4,"./../audio_video/AudioVideo":10,"./../audio_video/AudioVideos":12,"./../corpus/Corpus":17,"./../data_list/DataList":23,"./../datum/Datum":25,"./../datum/DatumField":26,"./../datum/DatumFields":27,"./../user/Participant":53,"q":78,"textgrid":80,"underscore":81}],43:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject,
   Q = require("q");
 
@@ -47986,8 +48533,8 @@ ContextualizableObject.prototype = Object.create(Object.prototype, /** @lends Co
 });
 exports.ContextualizableObject = ContextualizableObject;
 
-},{"./../FieldDBObject":4,"q":76}],43:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};/* globals window */
+},{"./../FieldDBObject":4,"q":78}],44:[function(require,module,exports){
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};/* globals window, localStorage, navigator */
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 var ELanguages = require("./ELanguages").ELanguages;
 var CORS = require("./../CORS").CORS;
@@ -48008,9 +48555,9 @@ var elanguages = require("./elanguages.json");
  * @constructs
  */
 var Contextualizer = function Contextualizer(options) {
-  if(!this._fieldDBtype){
-		this._fieldDBtype = "Contextualizer";
-	}
+  if (!this._fieldDBtype) {
+    this._fieldDBtype = "Contextualizer";
+  }
   this.debug("Constructing Contextualizer ", options);
   // this.debugMode = true;
   var localArguments = arguments;
@@ -48038,6 +48585,17 @@ var Contextualizer = function Contextualizer(options) {
   if (!options || options.alwaysConfirmOkay === undefined) {
     this.warn("By default it will be okay for users to modify global locale strings. IF they are saved this will affect other users.");
     this.alwaysConfirmOkay = true;
+  }
+  if (this.userOverridenLocalePreference) {
+    this.currentLocale = this.userOverridenLocalePreference;
+  } else {
+    try {
+      if (navigator.languages[0].indexOf(this.currentLocale.iso) === -1) {
+        this.currentLocale = navigator.languages[0];
+      }
+    } catch (e) {
+      console.log("not using hte browser's language", e);
+    }
   }
   return this;
 };
@@ -48094,6 +48652,39 @@ Contextualizer.prototype = Object.create(FieldDBObject.prototype, /** @lends Con
 
       this.warn("SETTING LOCALE FROM " + this._currentLocale + " to " + value, this.data);
       this._currentLocale = value;
+    }
+  },
+
+  userOverridenLocalePreference: {
+    get: function() {
+      var userOverridenLocalePreference;
+      try {
+        userOverridenLocalePreference = JSON.parse(localStorage.getItem("_userOverridenLocalePreference"));
+      } catch (e) {
+        this.warn("Localstorage is not available, using the object there will be no persistance across loads", e, this._userOverridenLocalePreference);
+        userOverridenLocalePreference = this._userOverridenLocalePreference;
+      }
+      if (!userOverridenLocalePreference) {
+        return;
+      }
+      return userOverridenLocalePreference;
+    },
+    set: function(value) {
+      if (value) {
+        try {
+          localStorage.setItem("_userOverridenLocalePreference", JSON.stringify(value));
+        } catch (e) {
+          this._userOverridenLocalePreference = value;
+          this.debug("Localstorage is not available, using the object there will be no persistance across loads", e, this._userOverridenLocalePreference);
+        }
+      } else {
+        try {
+          localStorage.removeItem("_userOverridenLocalePreference");
+        } catch (e) {
+          this.debug("Localstorage is not available, using the object there will be no persistance across loads", e, this._userOverridenLocalePreference);
+          delete this._userOverridenLocalePreference;
+        }
+      }
     }
   },
 
@@ -48228,6 +48819,7 @@ Contextualizer.prototype = Object.create(FieldDBObject.prototype, /** @lends Con
         FieldDBObject.application.corpus.getCorpusSpecificLocalizations();
         this.requestedCorpusSpecificLocalizations = true;
       }
+      result = result.replace(/^locale_/,"");
       return result;
     }
   },
@@ -48426,7 +49018,7 @@ Contextualizer.prototype = Object.create(FieldDBObject.prototype, /** @lends Con
 
 exports.Contextualizer = Contextualizer;
 
-},{"./../CORS":1,"./../FieldDBObject":4,"./ELanguages":44,"./elanguages.json":45,"./en/messages.json":46,"./es/messages.json":47,"q":76}],44:[function(require,module,exports){
+},{"./../CORS":1,"./../FieldDBObject":4,"./ELanguages":45,"./elanguages.json":46,"./en/messages.json":47,"./es/messages.json":48,"q":78}],45:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
@@ -48472,7 +49064,7 @@ ELanguages.prototype = Object.create(Collection.prototype, /** @lends ELanguages
 });
 exports.ELanguages = ELanguages;
 
-},{"./../Collection":2,"./../FieldDBObject":4}],45:[function(require,module,exports){
+},{"./../Collection":2,"./../FieldDBObject":4}],46:[function(require,module,exports){
 module.exports=[{
   "iso": "Non applicable",
   "name": "NA",
@@ -49211,7 +49803,7 @@ module.exports=[{
   "nativeName": "Saɯ cueŋƅ, Saw cuengh"
 }]
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 module.exports={
   "application_title" : {
     "message" : "LingSync beta",
@@ -49807,7 +50399,7 @@ module.exports={
   }
 }
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 module.exports={
   "application_title" : {
     "message" : "iCampo beta"
@@ -50337,7 +50929,7 @@ module.exports={
     "message" : "Más"
   }
 }
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
 /**
@@ -50401,7 +50993,7 @@ Search.prototype = Object.create(FieldDBObject.prototype, /** @lends Search.prot
 });
 exports.Search = Search;
 
-},{"./../FieldDBObject":4}],49:[function(require,module,exports){
+},{"./../FieldDBObject":4}],50:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 
 /**
@@ -50455,7 +51047,7 @@ InsertUnicode.prototype = Object.create(FieldDBObject.prototype, /** @lends Inse
 });
 exports.InsertUnicode = InsertUnicode;
 
-},{"./../FieldDBObject":4}],50:[function(require,module,exports){
+},{"./../FieldDBObject":4}],51:[function(require,module,exports){
 var Collection = require("./../Collection").Collection;
 var InsertUnicode = require("./UnicodeSymbol").InsertUnicode;
 
@@ -50763,7 +51355,7 @@ InsertUnicodes.prototype = Object.create(Collection.prototype, /** @lends Insert
 });
 exports.InsertUnicodes = InsertUnicodes;
 
-},{"./../Collection":2,"./UnicodeSymbol":49}],51:[function(require,module,exports){
+},{"./../Collection":2,"./UnicodeSymbol":50}],52:[function(require,module,exports){
 var Speaker = require("./Speaker").Speaker;
 var DEFAULT_CORPUS_MODEL = require("./../corpus/corpus.json");
 
@@ -50814,7 +51406,7 @@ Consultant.prototype = Object.create(Speaker.prototype, /** @lends Consultant.pr
 });
 exports.Consultant = Consultant;
 
-},{"./../corpus/corpus.json":20,"./Speaker":53}],52:[function(require,module,exports){
+},{"./../corpus/corpus.json":21,"./Speaker":54}],53:[function(require,module,exports){
 /* globals FieldDB */
 var Speaker = require("./Speaker").Speaker;
 var DEFAULT_CORPUS_MODEL = require("./../corpus/corpus.json");
@@ -50872,7 +51464,7 @@ Participant.prototype = Object.create(Speaker.prototype, /** @lends Participant.
 });
 exports.Participant = Participant;
 
-},{"./../corpus/corpus.json":20,"./Speaker":53}],53:[function(require,module,exports){
+},{"./../corpus/corpus.json":21,"./Speaker":54}],54:[function(require,module,exports){
 var Confidential = require("./../confidentiality_encryption/Confidential").Confidential;
 var DatumFields = require("./../datum/DatumFields").DatumFields;
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
@@ -51384,7 +51976,7 @@ Speaker.prototype = Object.create(UserMask.prototype, /** @lends Speaker.prototy
 });
 exports.Speaker = Speaker;
 
-},{"./../FieldDBObject":4,"./../confidentiality_encryption/Confidential":15,"./../corpus/corpus.json":20,"./../datum/DatumFields":26,"./UserMask":56}],54:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./../confidentiality_encryption/Confidential":16,"./../corpus/corpus.json":21,"./../datum/DatumFields":27,"./UserMask":57}],55:[function(require,module,exports){
 var UserMask = require("./UserMask").UserMask;
 
 /**
@@ -51466,7 +52058,7 @@ Team.prototype = Object.create(UserMask.prototype, /** @lends Team.prototype */ 
 
 exports.Team = Team;
 
-},{"./UserMask":56}],55:[function(require,module,exports){
+},{"./UserMask":57}],56:[function(require,module,exports){
 var UserMask = require("./UserMask").UserMask;
 var UserPreference = require("./UserPreference").UserPreference;
 var DEFAULT_USER_MODEL = require("./user.json");
@@ -51597,7 +52189,7 @@ User.prototype = Object.create(UserMask.prototype, /** @lends User.prototype */ 
 });
 exports.User = User;
 
-},{"./UserMask":56,"./UserPreference":57,"./user.json":58}],56:[function(require,module,exports){
+},{"./UserMask":57,"./UserPreference":58,"./user.json":59}],57:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 var MD5 = require("MD5");
 
@@ -51876,7 +52468,7 @@ UserMask.prototype = Object.create(FieldDBObject.prototype, /** @lends UserMask.
 
 exports.UserMask = UserMask;
 
-},{"./../FieldDBObject":4,"MD5":59}],57:[function(require,module,exports){
+},{"./../FieldDBObject":4,"MD5":60}],58:[function(require,module,exports){
 var FieldDBObject = require("./../FieldDBObject").FieldDBObject;
 var HotKeys = require("./../hotkey/HotKeys").HotKeys;
 var InsertUnicodes = require("./../unicode/UnicodeSymbols").InsertUnicodes;
@@ -52023,7 +52615,7 @@ UserPreference.prototype = Object.create(FieldDBObject.prototype, /** @lends Use
 });
 exports.UserPreference = UserPreference;
 
-},{"./../FieldDBObject":4,"./../hotkey/HotKeys":38,"./../unicode/UnicodeSymbols":50}],58:[function(require,module,exports){
+},{"./../FieldDBObject":4,"./../hotkey/HotKeys":39,"./../unicode/UnicodeSymbols":51}],59:[function(require,module,exports){
 module.exports={
   "_id": "",
   "jsonType": "user",
@@ -52200,7 +52792,7 @@ module.exports={
   "accessibleDBS": []
 }
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 var Buffer=require("__browserify_Buffer");(function(){
   var crypt = require('crypt'),
       utf8 = require('charenc').utf8,
@@ -52362,7 +52954,7 @@ var Buffer=require("__browserify_Buffer");(function(){
 
 })();
 
-},{"__browserify_Buffer":63,"charenc":60,"crypt":61}],60:[function(require,module,exports){
+},{"__browserify_Buffer":65,"charenc":61,"crypt":62}],61:[function(require,module,exports){
 var charenc = {
   // UTF-8 encoding
   utf8: {
@@ -52397,7 +52989,7 @@ var charenc = {
 
 module.exports = charenc;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 (function() {
   var base64map
       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
@@ -52495,7 +53087,7 @@ module.exports = charenc;
   module.exports = crypt;
 })();
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 var Buffer=require("__browserify_Buffer");(function () {
   "use strict";
 
@@ -52506,7 +53098,1821 @@ var Buffer=require("__browserify_Buffer");(function () {
   module.exports = atob;
 }());
 
-},{"__browserify_Buffer":63}],63:[function(require,module,exports){
+},{"__browserify_Buffer":65}],64:[function(require,module,exports){
+//this file was generated
+"use strict"
+var mime = module.exports = {
+    lookup: function (path, fallback) {
+  var ext = path.replace(/.*[\.\/]/, '').toLowerCase();
+
+  return this.types[ext] || fallback || this.default_type;
+}
+  , default_type: "application/octet-stream"
+  , types: {
+  "123": "application/vnd.lotus-1-2-3",
+  "ez": "application/andrew-inset",
+  "aw": "application/applixware",
+  "atom": "application/atom+xml",
+  "atomcat": "application/atomcat+xml",
+  "atomsvc": "application/atomsvc+xml",
+  "ccxml": "application/ccxml+xml",
+  "cdmia": "application/cdmi-capability",
+  "cdmic": "application/cdmi-container",
+  "cdmid": "application/cdmi-domain",
+  "cdmio": "application/cdmi-object",
+  "cdmiq": "application/cdmi-queue",
+  "cu": "application/cu-seeme",
+  "davmount": "application/davmount+xml",
+  "dbk": "application/docbook+xml",
+  "dssc": "application/dssc+der",
+  "xdssc": "application/dssc+xml",
+  "ecma": "application/ecmascript",
+  "emma": "application/emma+xml",
+  "epub": "application/epub+zip",
+  "exi": "application/exi",
+  "pfr": "application/font-tdpfr",
+  "gml": "application/gml+xml",
+  "gpx": "application/gpx+xml",
+  "gxf": "application/gxf",
+  "stk": "application/hyperstudio",
+  "ink": "application/inkml+xml",
+  "inkml": "application/inkml+xml",
+  "ipfix": "application/ipfix",
+  "jar": "application/java-archive",
+  "ser": "application/java-serialized-object",
+  "class": "application/java-vm",
+  "js": "application/javascript",
+  "json": "application/json",
+  "jsonml": "application/jsonml+json",
+  "lostxml": "application/lost+xml",
+  "hqx": "application/mac-binhex40",
+  "cpt": "application/mac-compactpro",
+  "mads": "application/mads+xml",
+  "mrc": "application/marc",
+  "mrcx": "application/marcxml+xml",
+  "ma": "application/mathematica",
+  "nb": "application/mathematica",
+  "mb": "application/mathematica",
+  "mathml": "application/mathml+xml",
+  "mbox": "application/mbox",
+  "mscml": "application/mediaservercontrol+xml",
+  "metalink": "application/metalink+xml",
+  "meta4": "application/metalink4+xml",
+  "mets": "application/mets+xml",
+  "mods": "application/mods+xml",
+  "m21": "application/mp21",
+  "mp21": "application/mp21",
+  "mp4s": "application/mp4",
+  "doc": "application/msword",
+  "dot": "application/msword",
+  "mxf": "application/mxf",
+  "bin": "application/octet-stream",
+  "dms": "application/octet-stream",
+  "lrf": "application/octet-stream",
+  "mar": "application/octet-stream",
+  "so": "application/octet-stream",
+  "dist": "application/octet-stream",
+  "distz": "application/octet-stream",
+  "pkg": "application/octet-stream",
+  "bpk": "application/octet-stream",
+  "dump": "application/octet-stream",
+  "elc": "application/octet-stream",
+  "deploy": "application/octet-stream",
+  "oda": "application/oda",
+  "opf": "application/oebps-package+xml",
+  "ogx": "application/ogg",
+  "omdoc": "application/omdoc+xml",
+  "onetoc": "application/onenote",
+  "onetoc2": "application/onenote",
+  "onetmp": "application/onenote",
+  "onepkg": "application/onenote",
+  "oxps": "application/oxps",
+  "xer": "application/patch-ops-error+xml",
+  "pdf": "application/pdf",
+  "pgp": "application/pgp-encrypted",
+  "asc": "application/pgp-signature",
+  "sig": "application/pgp-signature",
+  "prf": "application/pics-rules",
+  "p10": "application/pkcs10",
+  "p7m": "application/pkcs7-mime",
+  "p7c": "application/pkcs7-mime",
+  "p7s": "application/pkcs7-signature",
+  "p8": "application/pkcs8",
+  "ac": "application/pkix-attr-cert",
+  "cer": "application/pkix-cert",
+  "crl": "application/pkix-crl",
+  "pkipath": "application/pkix-pkipath",
+  "pki": "application/pkixcmp",
+  "pls": "application/pls+xml",
+  "ai": "application/postscript",
+  "eps": "application/postscript",
+  "ps": "application/postscript",
+  "cww": "application/prs.cww",
+  "pskcxml": "application/pskc+xml",
+  "rdf": "application/rdf+xml",
+  "rif": "application/reginfo+xml",
+  "rnc": "application/relax-ng-compact-syntax",
+  "rl": "application/resource-lists+xml",
+  "rld": "application/resource-lists-diff+xml",
+  "rs": "application/rls-services+xml",
+  "gbr": "application/rpki-ghostbusters",
+  "mft": "application/rpki-manifest",
+  "roa": "application/rpki-roa",
+  "rsd": "application/rsd+xml",
+  "rss": "application/rss+xml",
+  "rtf": "application/rtf",
+  "sbml": "application/sbml+xml",
+  "scq": "application/scvp-cv-request",
+  "scs": "application/scvp-cv-response",
+  "spq": "application/scvp-vp-request",
+  "spp": "application/scvp-vp-response",
+  "sdp": "application/sdp",
+  "setpay": "application/set-payment-initiation",
+  "setreg": "application/set-registration-initiation",
+  "shf": "application/shf+xml",
+  "smi": "application/smil+xml",
+  "smil": "application/smil+xml",
+  "rq": "application/sparql-query",
+  "srx": "application/sparql-results+xml",
+  "gram": "application/srgs",
+  "grxml": "application/srgs+xml",
+  "sru": "application/sru+xml",
+  "ssdl": "application/ssdl+xml",
+  "ssml": "application/ssml+xml",
+  "tei": "application/tei+xml",
+  "teicorpus": "application/tei+xml",
+  "tfi": "application/thraud+xml",
+  "tsd": "application/timestamped-data",
+  "plb": "application/vnd.3gpp.pic-bw-large",
+  "psb": "application/vnd.3gpp.pic-bw-small",
+  "pvb": "application/vnd.3gpp.pic-bw-var",
+  "tcap": "application/vnd.3gpp2.tcap",
+  "pwn": "application/vnd.3m.post-it-notes",
+  "aso": "application/vnd.accpac.simply.aso",
+  "imp": "application/vnd.accpac.simply.imp",
+  "acu": "application/vnd.acucobol",
+  "atc": "application/vnd.acucorp",
+  "acutc": "application/vnd.acucorp",
+  "air": "application/vnd.adobe.air-application-installer-package+zip",
+  "fcdt": "application/vnd.adobe.formscentral.fcdt",
+  "fxp": "application/vnd.adobe.fxp",
+  "fxpl": "application/vnd.adobe.fxp",
+  "xdp": "application/vnd.adobe.xdp+xml",
+  "xfdf": "application/vnd.adobe.xfdf",
+  "ahead": "application/vnd.ahead.space",
+  "azf": "application/vnd.airzip.filesecure.azf",
+  "azs": "application/vnd.airzip.filesecure.azs",
+  "azw": "application/vnd.amazon.ebook",
+  "acc": "application/vnd.americandynamics.acc",
+  "ami": "application/vnd.amiga.ami",
+  "apk": "application/vnd.android.package-archive",
+  "cii": "application/vnd.anser-web-certificate-issue-initiation",
+  "fti": "application/vnd.anser-web-funds-transfer-initiation",
+  "atx": "application/vnd.antix.game-component",
+  "mpkg": "application/vnd.apple.installer+xml",
+  "m3u8": "application/vnd.apple.mpegurl",
+  "swi": "application/vnd.aristanetworks.swi",
+  "iota": "application/vnd.astraea-software.iota",
+  "aep": "application/vnd.audiograph",
+  "mpm": "application/vnd.blueice.multipass",
+  "bmi": "application/vnd.bmi",
+  "rep": "application/vnd.businessobjects",
+  "cdxml": "application/vnd.chemdraw+xml",
+  "mmd": "application/vnd.chipnuts.karaoke-mmd",
+  "cdy": "application/vnd.cinderella",
+  "cla": "application/vnd.claymore",
+  "rp9": "application/vnd.cloanto.rp9",
+  "c4g": "application/vnd.clonk.c4group",
+  "c4d": "application/vnd.clonk.c4group",
+  "c4f": "application/vnd.clonk.c4group",
+  "c4p": "application/vnd.clonk.c4group",
+  "c4u": "application/vnd.clonk.c4group",
+  "c11amc": "application/vnd.cluetrust.cartomobile-config",
+  "c11amz": "application/vnd.cluetrust.cartomobile-config-pkg",
+  "csp": "application/vnd.commonspace",
+  "cdbcmsg": "application/vnd.contact.cmsg",
+  "cmc": "application/vnd.cosmocaller",
+  "clkx": "application/vnd.crick.clicker",
+  "clkk": "application/vnd.crick.clicker.keyboard",
+  "clkp": "application/vnd.crick.clicker.palette",
+  "clkt": "application/vnd.crick.clicker.template",
+  "clkw": "application/vnd.crick.clicker.wordbank",
+  "wbs": "application/vnd.criticaltools.wbs+xml",
+  "pml": "application/vnd.ctc-posml",
+  "ppd": "application/vnd.cups-ppd",
+  "car": "application/vnd.curl.car",
+  "pcurl": "application/vnd.curl.pcurl",
+  "dart": "application/vnd.dart",
+  "rdz": "application/vnd.data-vision.rdz",
+  "uvf": "application/vnd.dece.data",
+  "uvvf": "application/vnd.dece.data",
+  "uvd": "application/vnd.dece.data",
+  "uvvd": "application/vnd.dece.data",
+  "uvt": "application/vnd.dece.ttml+xml",
+  "uvvt": "application/vnd.dece.ttml+xml",
+  "uvx": "application/vnd.dece.unspecified",
+  "uvvx": "application/vnd.dece.unspecified",
+  "uvz": "application/vnd.dece.zip",
+  "uvvz": "application/vnd.dece.zip",
+  "fe_launch": "application/vnd.denovo.fcselayout-link",
+  "dna": "application/vnd.dna",
+  "mlp": "application/vnd.dolby.mlp",
+  "dpg": "application/vnd.dpgraph",
+  "dfac": "application/vnd.dreamfactory",
+  "kpxx": "application/vnd.ds-keypoint",
+  "ait": "application/vnd.dvb.ait",
+  "svc": "application/vnd.dvb.service",
+  "geo": "application/vnd.dynageo",
+  "mag": "application/vnd.ecowin.chart",
+  "nml": "application/vnd.enliven",
+  "esf": "application/vnd.epson.esf",
+  "msf": "application/vnd.epson.msf",
+  "qam": "application/vnd.epson.quickanime",
+  "slt": "application/vnd.epson.salt",
+  "ssf": "application/vnd.epson.ssf",
+  "es3": "application/vnd.eszigno3+xml",
+  "et3": "application/vnd.eszigno3+xml",
+  "ez2": "application/vnd.ezpix-album",
+  "ez3": "application/vnd.ezpix-package",
+  "fdf": "application/vnd.fdf",
+  "mseed": "application/vnd.fdsn.mseed",
+  "seed": "application/vnd.fdsn.seed",
+  "dataless": "application/vnd.fdsn.seed",
+  "gph": "application/vnd.flographit",
+  "ftc": "application/vnd.fluxtime.clip",
+  "fm": "application/vnd.framemaker",
+  "frame": "application/vnd.framemaker",
+  "maker": "application/vnd.framemaker",
+  "book": "application/vnd.framemaker",
+  "fnc": "application/vnd.frogans.fnc",
+  "ltf": "application/vnd.frogans.ltf",
+  "fsc": "application/vnd.fsc.weblaunch",
+  "oas": "application/vnd.fujitsu.oasys",
+  "oa2": "application/vnd.fujitsu.oasys2",
+  "oa3": "application/vnd.fujitsu.oasys3",
+  "fg5": "application/vnd.fujitsu.oasysgp",
+  "bh2": "application/vnd.fujitsu.oasysprs",
+  "ddd": "application/vnd.fujixerox.ddd",
+  "xdw": "application/vnd.fujixerox.docuworks",
+  "xbd": "application/vnd.fujixerox.docuworks.binder",
+  "fzs": "application/vnd.fuzzysheet",
+  "txd": "application/vnd.genomatix.tuxedo",
+  "ggb": "application/vnd.geogebra.file",
+  "ggt": "application/vnd.geogebra.tool",
+  "gex": "application/vnd.geometry-explorer",
+  "gre": "application/vnd.geometry-explorer",
+  "gxt": "application/vnd.geonext",
+  "g2w": "application/vnd.geoplan",
+  "g3w": "application/vnd.geospace",
+  "gmx": "application/vnd.gmx",
+  "kml": "application/vnd.google-earth.kml+xml",
+  "kmz": "application/vnd.google-earth.kmz",
+  "gqf": "application/vnd.grafeq",
+  "gqs": "application/vnd.grafeq",
+  "gac": "application/vnd.groove-account",
+  "ghf": "application/vnd.groove-help",
+  "gim": "application/vnd.groove-identity-message",
+  "grv": "application/vnd.groove-injector",
+  "gtm": "application/vnd.groove-tool-message",
+  "tpl": "application/vnd.groove-tool-template",
+  "vcg": "application/vnd.groove-vcard",
+  "hal": "application/vnd.hal+xml",
+  "zmm": "application/vnd.handheld-entertainment+xml",
+  "hbci": "application/vnd.hbci",
+  "les": "application/vnd.hhe.lesson-player",
+  "hpgl": "application/vnd.hp-hpgl",
+  "hpid": "application/vnd.hp-hpid",
+  "hps": "application/vnd.hp-hps",
+  "jlt": "application/vnd.hp-jlyt",
+  "pcl": "application/vnd.hp-pcl",
+  "pclxl": "application/vnd.hp-pclxl",
+  "sfd-hdstx": "application/vnd.hydrostatix.sof-data",
+  "mpy": "application/vnd.ibm.minipay",
+  "afp": "application/vnd.ibm.modcap",
+  "listafp": "application/vnd.ibm.modcap",
+  "list3820": "application/vnd.ibm.modcap",
+  "irm": "application/vnd.ibm.rights-management",
+  "sc": "application/vnd.ibm.secure-container",
+  "icc": "application/vnd.iccprofile",
+  "icm": "application/vnd.iccprofile",
+  "igl": "application/vnd.igloader",
+  "ivp": "application/vnd.immervision-ivp",
+  "ivu": "application/vnd.immervision-ivu",
+  "igm": "application/vnd.insors.igm",
+  "xpw": "application/vnd.intercon.formnet",
+  "xpx": "application/vnd.intercon.formnet",
+  "i2g": "application/vnd.intergeo",
+  "qbo": "application/vnd.intu.qbo",
+  "qfx": "application/vnd.intu.qfx",
+  "rcprofile": "application/vnd.ipunplugged.rcprofile",
+  "irp": "application/vnd.irepository.package+xml",
+  "xpr": "application/vnd.is-xpr",
+  "fcs": "application/vnd.isac.fcs",
+  "jam": "application/vnd.jam",
+  "rms": "application/vnd.jcp.javame.midlet-rms",
+  "jisp": "application/vnd.jisp",
+  "joda": "application/vnd.joost.joda-archive",
+  "ktz": "application/vnd.kahootz",
+  "ktr": "application/vnd.kahootz",
+  "karbon": "application/vnd.kde.karbon",
+  "chrt": "application/vnd.kde.kchart",
+  "kfo": "application/vnd.kde.kformula",
+  "flw": "application/vnd.kde.kivio",
+  "kon": "application/vnd.kde.kontour",
+  "kpr": "application/vnd.kde.kpresenter",
+  "kpt": "application/vnd.kde.kpresenter",
+  "ksp": "application/vnd.kde.kspread",
+  "kwd": "application/vnd.kde.kword",
+  "kwt": "application/vnd.kde.kword",
+  "htke": "application/vnd.kenameaapp",
+  "kia": "application/vnd.kidspiration",
+  "kne": "application/vnd.kinar",
+  "knp": "application/vnd.kinar",
+  "skp": "application/vnd.koan",
+  "skd": "application/vnd.koan",
+  "skt": "application/vnd.koan",
+  "skm": "application/vnd.koan",
+  "sse": "application/vnd.kodak-descriptor",
+  "lasxml": "application/vnd.las.las+xml",
+  "lbd": "application/vnd.llamagraphics.life-balance.desktop",
+  "lbe": "application/vnd.llamagraphics.life-balance.exchange+xml",
+  "apr": "application/vnd.lotus-approach",
+  "pre": "application/vnd.lotus-freelance",
+  "nsf": "application/vnd.lotus-notes",
+  "org": "application/vnd.lotus-organizer",
+  "scm": "application/vnd.lotus-screencam",
+  "lwp": "application/vnd.lotus-wordpro",
+  "portpkg": "application/vnd.macports.portpkg",
+  "mcd": "application/vnd.mcd",
+  "mc1": "application/vnd.medcalcdata",
+  "cdkey": "application/vnd.mediastation.cdkey",
+  "mwf": "application/vnd.mfer",
+  "mfm": "application/vnd.mfmp",
+  "flo": "application/vnd.micrografx.flo",
+  "igx": "application/vnd.micrografx.igx",
+  "mif": "application/vnd.mif",
+  "daf": "application/vnd.mobius.daf",
+  "dis": "application/vnd.mobius.dis",
+  "mbk": "application/vnd.mobius.mbk",
+  "mqy": "application/vnd.mobius.mqy",
+  "msl": "application/vnd.mobius.msl",
+  "plc": "application/vnd.mobius.plc",
+  "txf": "application/vnd.mobius.txf",
+  "mpn": "application/vnd.mophun.application",
+  "mpc": "application/vnd.mophun.certificate",
+  "xul": "application/vnd.mozilla.xul+xml",
+  "cil": "application/vnd.ms-artgalry",
+  "cab": "application/vnd.ms-cab-compressed",
+  "xls": "application/vnd.ms-excel",
+  "xlm": "application/vnd.ms-excel",
+  "xla": "application/vnd.ms-excel",
+  "xlc": "application/vnd.ms-excel",
+  "xlt": "application/vnd.ms-excel",
+  "xlw": "application/vnd.ms-excel",
+  "xlam": "application/vnd.ms-excel.addin.macroenabled.12",
+  "xlsb": "application/vnd.ms-excel.sheet.binary.macroenabled.12",
+  "xlsm": "application/vnd.ms-excel.sheet.macroenabled.12",
+  "xltm": "application/vnd.ms-excel.template.macroenabled.12",
+  "eot": "application/vnd.ms-fontobject",
+  "chm": "application/vnd.ms-htmlhelp",
+  "ims": "application/vnd.ms-ims",
+  "lrm": "application/vnd.ms-lrm",
+  "thmx": "application/vnd.ms-officetheme",
+  "cat": "application/vnd.ms-pki.seccat",
+  "stl": "application/vnd.ms-pki.stl",
+  "ppt": "application/vnd.ms-powerpoint",
+  "pps": "application/vnd.ms-powerpoint",
+  "pot": "application/vnd.ms-powerpoint",
+  "ppam": "application/vnd.ms-powerpoint.addin.macroenabled.12",
+  "pptm": "application/vnd.ms-powerpoint.presentation.macroenabled.12",
+  "sldm": "application/vnd.ms-powerpoint.slide.macroenabled.12",
+  "ppsm": "application/vnd.ms-powerpoint.slideshow.macroenabled.12",
+  "potm": "application/vnd.ms-powerpoint.template.macroenabled.12",
+  "mpp": "application/vnd.ms-project",
+  "mpt": "application/vnd.ms-project",
+  "docm": "application/vnd.ms-word.document.macroenabled.12",
+  "dotm": "application/vnd.ms-word.template.macroenabled.12",
+  "wps": "application/vnd.ms-works",
+  "wks": "application/vnd.ms-works",
+  "wcm": "application/vnd.ms-works",
+  "wdb": "application/vnd.ms-works",
+  "wpl": "application/vnd.ms-wpl",
+  "xps": "application/vnd.ms-xpsdocument",
+  "mseq": "application/vnd.mseq",
+  "mus": "application/vnd.musician",
+  "msty": "application/vnd.muvee.style",
+  "taglet": "application/vnd.mynfc",
+  "nlu": "application/vnd.neurolanguage.nlu",
+  "ntf": "application/vnd.nitf",
+  "nitf": "application/vnd.nitf",
+  "nnd": "application/vnd.noblenet-directory",
+  "nns": "application/vnd.noblenet-sealer",
+  "nnw": "application/vnd.noblenet-web",
+  "ngdat": "application/vnd.nokia.n-gage.data",
+  "n-gage": "application/vnd.nokia.n-gage.symbian.install",
+  "rpst": "application/vnd.nokia.radio-preset",
+  "rpss": "application/vnd.nokia.radio-presets",
+  "edm": "application/vnd.novadigm.edm",
+  "edx": "application/vnd.novadigm.edx",
+  "ext": "application/vnd.novadigm.ext",
+  "odc": "application/vnd.oasis.opendocument.chart",
+  "otc": "application/vnd.oasis.opendocument.chart-template",
+  "odb": "application/vnd.oasis.opendocument.database",
+  "odf": "application/vnd.oasis.opendocument.formula",
+  "odft": "application/vnd.oasis.opendocument.formula-template",
+  "odg": "application/vnd.oasis.opendocument.graphics",
+  "otg": "application/vnd.oasis.opendocument.graphics-template",
+  "odi": "application/vnd.oasis.opendocument.image",
+  "oti": "application/vnd.oasis.opendocument.image-template",
+  "odp": "application/vnd.oasis.opendocument.presentation",
+  "otp": "application/vnd.oasis.opendocument.presentation-template",
+  "ods": "application/vnd.oasis.opendocument.spreadsheet",
+  "ots": "application/vnd.oasis.opendocument.spreadsheet-template",
+  "odt": "application/vnd.oasis.opendocument.text",
+  "odm": "application/vnd.oasis.opendocument.text-master",
+  "ott": "application/vnd.oasis.opendocument.text-template",
+  "oth": "application/vnd.oasis.opendocument.text-web",
+  "xo": "application/vnd.olpc-sugar",
+  "dd2": "application/vnd.oma.dd2+xml",
+  "oxt": "application/vnd.openofficeorg.extension",
+  "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "sldx": "application/vnd.openxmlformats-officedocument.presentationml.slide",
+  "ppsx": "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+  "potx": "application/vnd.openxmlformats-officedocument.presentationml.template",
+  "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "xltx": "application/vnd.openxmlformats-officedocument.spreadsheetml.template",
+  "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "dotx": "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+  "mgp": "application/vnd.osgeo.mapguide.package",
+  "dp": "application/vnd.osgi.dp",
+  "esa": "application/vnd.osgi.subsystem",
+  "pdb": "application/vnd.palm",
+  "pqa": "application/vnd.palm",
+  "oprc": "application/vnd.palm",
+  "paw": "application/vnd.pawaafile",
+  "str": "application/vnd.pg.format",
+  "ei6": "application/vnd.pg.osasli",
+  "efif": "application/vnd.picsel",
+  "wg": "application/vnd.pmi.widget",
+  "plf": "application/vnd.pocketlearn",
+  "pbd": "application/vnd.powerbuilder6",
+  "box": "application/vnd.previewsystems.box",
+  "mgz": "application/vnd.proteus.magazine",
+  "qps": "application/vnd.publishare-delta-tree",
+  "ptid": "application/vnd.pvi.ptid1",
+  "qxd": "application/vnd.quark.quarkxpress",
+  "qxt": "application/vnd.quark.quarkxpress",
+  "qwd": "application/vnd.quark.quarkxpress",
+  "qwt": "application/vnd.quark.quarkxpress",
+  "qxl": "application/vnd.quark.quarkxpress",
+  "qxb": "application/vnd.quark.quarkxpress",
+  "bed": "application/vnd.realvnc.bed",
+  "mxl": "application/vnd.recordare.musicxml",
+  "musicxml": "application/vnd.recordare.musicxml+xml",
+  "cryptonote": "application/vnd.rig.cryptonote",
+  "cod": "application/vnd.rim.cod",
+  "rm": "application/vnd.rn-realmedia",
+  "rmvb": "application/vnd.rn-realmedia-vbr",
+  "link66": "application/vnd.route66.link66+xml",
+  "st": "application/vnd.sailingtracker.track",
+  "see": "application/vnd.seemail",
+  "sema": "application/vnd.sema",
+  "semd": "application/vnd.semd",
+  "semf": "application/vnd.semf",
+  "ifm": "application/vnd.shana.informed.formdata",
+  "itp": "application/vnd.shana.informed.formtemplate",
+  "iif": "application/vnd.shana.informed.interchange",
+  "ipk": "application/vnd.shana.informed.package",
+  "twd": "application/vnd.simtech-mindmapper",
+  "twds": "application/vnd.simtech-mindmapper",
+  "mmf": "application/vnd.smaf",
+  "teacher": "application/vnd.smart.teacher",
+  "sdkm": "application/vnd.solent.sdkm+xml",
+  "sdkd": "application/vnd.solent.sdkm+xml",
+  "dxp": "application/vnd.spotfire.dxp",
+  "sfs": "application/vnd.spotfire.sfs",
+  "sdc": "application/vnd.stardivision.calc",
+  "sda": "application/vnd.stardivision.draw",
+  "sdd": "application/vnd.stardivision.impress",
+  "smf": "application/vnd.stardivision.math",
+  "sdw": "application/vnd.stardivision.writer",
+  "vor": "application/vnd.stardivision.writer",
+  "sgl": "application/vnd.stardivision.writer-global",
+  "smzip": "application/vnd.stepmania.package",
+  "sm": "application/vnd.stepmania.stepchart",
+  "sxc": "application/vnd.sun.xml.calc",
+  "stc": "application/vnd.sun.xml.calc.template",
+  "sxd": "application/vnd.sun.xml.draw",
+  "std": "application/vnd.sun.xml.draw.template",
+  "sxi": "application/vnd.sun.xml.impress",
+  "sti": "application/vnd.sun.xml.impress.template",
+  "sxm": "application/vnd.sun.xml.math",
+  "sxw": "application/vnd.sun.xml.writer",
+  "sxg": "application/vnd.sun.xml.writer.global",
+  "stw": "application/vnd.sun.xml.writer.template",
+  "sus": "application/vnd.sus-calendar",
+  "susp": "application/vnd.sus-calendar",
+  "svd": "application/vnd.svd",
+  "sis": "application/vnd.symbian.install",
+  "sisx": "application/vnd.symbian.install",
+  "xsm": "application/vnd.syncml+xml",
+  "bdm": "application/vnd.syncml.dm+wbxml",
+  "xdm": "application/vnd.syncml.dm+xml",
+  "tao": "application/vnd.tao.intent-module-archive",
+  "pcap": "application/vnd.tcpdump.pcap",
+  "cap": "application/vnd.tcpdump.pcap",
+  "dmp": "application/vnd.tcpdump.pcap",
+  "tmo": "application/vnd.tmobile-livetv",
+  "tpt": "application/vnd.trid.tpt",
+  "mxs": "application/vnd.triscape.mxs",
+  "tra": "application/vnd.trueapp",
+  "ufd": "application/vnd.ufdl",
+  "ufdl": "application/vnd.ufdl",
+  "utz": "application/vnd.uiq.theme",
+  "umj": "application/vnd.umajin",
+  "unityweb": "application/vnd.unity",
+  "uoml": "application/vnd.uoml+xml",
+  "vcx": "application/vnd.vcx",
+  "vsd": "application/vnd.visio",
+  "vst": "application/vnd.visio",
+  "vss": "application/vnd.visio",
+  "vsw": "application/vnd.visio",
+  "vis": "application/vnd.visionary",
+  "vsf": "application/vnd.vsf",
+  "wbxml": "application/vnd.wap.wbxml",
+  "wmlc": "application/vnd.wap.wmlc",
+  "wmlsc": "application/vnd.wap.wmlscriptc",
+  "wtb": "application/vnd.webturbo",
+  "nbp": "application/vnd.wolfram.player",
+  "wpd": "application/vnd.wordperfect",
+  "wqd": "application/vnd.wqd",
+  "stf": "application/vnd.wt.stf",
+  "xar": "application/vnd.xara",
+  "xfdl": "application/vnd.xfdl",
+  "hvd": "application/vnd.yamaha.hv-dic",
+  "hvs": "application/vnd.yamaha.hv-script",
+  "hvp": "application/vnd.yamaha.hv-voice",
+  "osf": "application/vnd.yamaha.openscoreformat",
+  "osfpvg": "application/vnd.yamaha.openscoreformat.osfpvg+xml",
+  "saf": "application/vnd.yamaha.smaf-audio",
+  "spf": "application/vnd.yamaha.smaf-phrase",
+  "cmp": "application/vnd.yellowriver-custom-menu",
+  "zir": "application/vnd.zul",
+  "zirz": "application/vnd.zul",
+  "zaz": "application/vnd.zzazz.deck+xml",
+  "vxml": "application/voicexml+xml",
+  "wgt": "application/widget",
+  "hlp": "application/winhlp",
+  "wsdl": "application/wsdl+xml",
+  "wspolicy": "application/wspolicy+xml",
+  "7z": "application/x-7z-compressed",
+  "abw": "application/x-abiword",
+  "ace": "application/x-ace-compressed",
+  "dmg": "application/x-apple-diskimage",
+  "aab": "application/x-authorware-bin",
+  "x32": "application/x-authorware-bin",
+  "u32": "application/x-authorware-bin",
+  "vox": "application/x-authorware-bin",
+  "aam": "application/x-authorware-map",
+  "aas": "application/x-authorware-seg",
+  "bcpio": "application/x-bcpio",
+  "torrent": "application/x-bittorrent",
+  "blb": "application/x-blorb",
+  "blorb": "application/x-blorb",
+  "bz": "application/x-bzip",
+  "bz2": "application/x-bzip2",
+  "boz": "application/x-bzip2",
+  "cbr": "application/x-cbr",
+  "cba": "application/x-cbr",
+  "cbt": "application/x-cbr",
+  "cbz": "application/x-cbr",
+  "cb7": "application/x-cbr",
+  "vcd": "application/x-cdlink",
+  "cfs": "application/x-cfs-compressed",
+  "chat": "application/x-chat",
+  "pgn": "application/x-chess-pgn",
+  "nsc": "application/x-conference",
+  "cpio": "application/x-cpio",
+  "csh": "application/x-csh",
+  "deb": "application/x-debian-package",
+  "udeb": "application/x-debian-package",
+  "dgc": "application/x-dgc-compressed",
+  "dir": "application/x-director",
+  "dcr": "application/x-director",
+  "dxr": "application/x-director",
+  "cst": "application/x-director",
+  "cct": "application/x-director",
+  "cxt": "application/x-director",
+  "w3d": "application/x-director",
+  "fgd": "application/x-director",
+  "swa": "application/x-director",
+  "wad": "application/x-doom",
+  "ncx": "application/x-dtbncx+xml",
+  "dtb": "application/x-dtbook+xml",
+  "res": "application/x-dtbresource+xml",
+  "dvi": "application/x-dvi",
+  "evy": "application/x-envoy",
+  "eva": "application/x-eva",
+  "bdf": "application/x-font-bdf",
+  "gsf": "application/x-font-ghostscript",
+  "psf": "application/x-font-linux-psf",
+  "otf": "application/x-font-otf",
+  "pcf": "application/x-font-pcf",
+  "snf": "application/x-font-snf",
+  "ttf": "application/x-font-ttf",
+  "ttc": "application/x-font-ttf",
+  "pfa": "application/x-font-type1",
+  "pfb": "application/x-font-type1",
+  "pfm": "application/x-font-type1",
+  "afm": "application/x-font-type1",
+  "woff": "application/x-font-woff",
+  "arc": "application/x-freearc",
+  "spl": "application/x-futuresplash",
+  "gca": "application/x-gca-compressed",
+  "ulx": "application/x-glulx",
+  "gnumeric": "application/x-gnumeric",
+  "gramps": "application/x-gramps-xml",
+  "gtar": "application/x-gtar",
+  "hdf": "application/x-hdf",
+  "install": "application/x-install-instructions",
+  "iso": "application/x-iso9660-image",
+  "jnlp": "application/x-java-jnlp-file",
+  "latex": "application/x-latex",
+  "lzh": "application/x-lzh-compressed",
+  "lha": "application/x-lzh-compressed",
+  "mie": "application/x-mie",
+  "prc": "application/x-mobipocket-ebook",
+  "mobi": "application/x-mobipocket-ebook",
+  "application": "application/x-ms-application",
+  "lnk": "application/x-ms-shortcut",
+  "wmd": "application/x-ms-wmd",
+  "wmz": "application/x-msmetafile",
+  "xbap": "application/x-ms-xbap",
+  "mdb": "application/x-msaccess",
+  "obd": "application/x-msbinder",
+  "crd": "application/x-mscardfile",
+  "clp": "application/x-msclip",
+  "exe": "application/x-msdownload",
+  "dll": "application/x-msdownload",
+  "com": "application/x-msdownload",
+  "bat": "application/x-msdownload",
+  "msi": "application/x-msdownload",
+  "mvb": "application/x-msmediaview",
+  "m13": "application/x-msmediaview",
+  "m14": "application/x-msmediaview",
+  "wmf": "application/x-msmetafile",
+  "emf": "application/x-msmetafile",
+  "emz": "application/x-msmetafile",
+  "mny": "application/x-msmoney",
+  "pub": "application/x-mspublisher",
+  "scd": "application/x-msschedule",
+  "trm": "application/x-msterminal",
+  "wri": "application/x-mswrite",
+  "nc": "application/x-netcdf",
+  "cdf": "application/x-netcdf",
+  "nzb": "application/x-nzb",
+  "p12": "application/x-pkcs12",
+  "pfx": "application/x-pkcs12",
+  "p7b": "application/x-pkcs7-certificates",
+  "spc": "application/x-pkcs7-certificates",
+  "p7r": "application/x-pkcs7-certreqresp",
+  "rar": "application/x-rar-compressed",
+  "ris": "application/x-research-info-systems",
+  "sh": "application/x-sh",
+  "shar": "application/x-shar",
+  "swf": "application/x-shockwave-flash",
+  "xap": "application/x-silverlight-app",
+  "sql": "application/x-sql",
+  "sit": "application/x-stuffit",
+  "sitx": "application/x-stuffitx",
+  "srt": "application/x-subrip",
+  "sv4cpio": "application/x-sv4cpio",
+  "sv4crc": "application/x-sv4crc",
+  "t3": "application/x-t3vm-image",
+  "gam": "application/x-tads",
+  "tar": "application/x-tar",
+  "tcl": "application/x-tcl",
+  "tex": "application/x-tex",
+  "tfm": "application/x-tex-tfm",
+  "texinfo": "application/x-texinfo",
+  "texi": "application/x-texinfo",
+  "obj": "application/x-tgif",
+  "ustar": "application/x-ustar",
+  "src": "application/x-wais-source",
+  "der": "application/x-x509-ca-cert",
+  "crt": "application/x-x509-ca-cert",
+  "fig": "application/x-xfig",
+  "xlf": "application/x-xliff+xml",
+  "xpi": "application/x-xpinstall",
+  "xz": "application/x-xz",
+  "z1": "application/x-zmachine",
+  "z2": "application/x-zmachine",
+  "z3": "application/x-zmachine",
+  "z4": "application/x-zmachine",
+  "z5": "application/x-zmachine",
+  "z6": "application/x-zmachine",
+  "z7": "application/x-zmachine",
+  "z8": "application/x-zmachine",
+  "xaml": "application/xaml+xml",
+  "xdf": "application/xcap-diff+xml",
+  "xenc": "application/xenc+xml",
+  "xhtml": "application/xhtml+xml",
+  "xht": "application/xhtml+xml",
+  "xml": "application/xml",
+  "xsl": "application/xml",
+  "dtd": "application/xml-dtd",
+  "xop": "application/xop+xml",
+  "xpl": "application/xproc+xml",
+  "xslt": "application/xslt+xml",
+  "xspf": "application/xspf+xml",
+  "mxml": "application/xv+xml",
+  "xhvml": "application/xv+xml",
+  "xvml": "application/xv+xml",
+  "xvm": "application/xv+xml",
+  "yang": "application/yang",
+  "yin": "application/yin+xml",
+  "zip": "application/zip",
+  "adp": "audio/adpcm",
+  "au": "audio/basic",
+  "snd": "audio/basic",
+  "mid": "audio/midi",
+  "midi": "audio/midi",
+  "kar": "audio/midi",
+  "rmi": "audio/midi",
+  "mp4a": "audio/mp4",
+  "mpga": "audio/mpeg",
+  "mp2": "audio/mpeg",
+  "mp2a": "audio/mpeg",
+  "mp3": "audio/mpeg",
+  "m2a": "audio/mpeg",
+  "m3a": "audio/mpeg",
+  "oga": "audio/ogg",
+  "ogg": "audio/ogg",
+  "spx": "audio/ogg",
+  "s3m": "audio/s3m",
+  "sil": "audio/silk",
+  "uva": "audio/vnd.dece.audio",
+  "uvva": "audio/vnd.dece.audio",
+  "eol": "audio/vnd.digital-winds",
+  "dra": "audio/vnd.dra",
+  "dts": "audio/vnd.dts",
+  "dtshd": "audio/vnd.dts.hd",
+  "lvp": "audio/vnd.lucent.voice",
+  "pya": "audio/vnd.ms-playready.media.pya",
+  "ecelp4800": "audio/vnd.nuera.ecelp4800",
+  "ecelp7470": "audio/vnd.nuera.ecelp7470",
+  "ecelp9600": "audio/vnd.nuera.ecelp9600",
+  "rip": "audio/vnd.rip",
+  "weba": "audio/webm",
+  "aac": "audio/x-aac",
+  "aif": "audio/x-aiff",
+  "aiff": "audio/x-aiff",
+  "aifc": "audio/x-aiff",
+  "caf": "audio/x-caf",
+  "flac": "audio/x-flac",
+  "mka": "audio/x-matroska",
+  "m3u": "audio/x-mpegurl",
+  "wax": "audio/x-ms-wax",
+  "wma": "audio/x-ms-wma",
+  "ram": "audio/x-pn-realaudio",
+  "ra": "audio/x-pn-realaudio",
+  "rmp": "audio/x-pn-realaudio-plugin",
+  "wav": "audio/x-wav",
+  "xm": "audio/xm",
+  "cdx": "chemical/x-cdx",
+  "cif": "chemical/x-cif",
+  "cmdf": "chemical/x-cmdf",
+  "cml": "chemical/x-cml",
+  "csml": "chemical/x-csml",
+  "xyz": "chemical/x-xyz",
+  "bmp": "image/bmp",
+  "cgm": "image/cgm",
+  "g3": "image/g3fax",
+  "gif": "image/gif",
+  "ief": "image/ief",
+  "jpeg": "image/jpeg",
+  "jpg": "image/jpeg",
+  "jpe": "image/jpeg",
+  "ktx": "image/ktx",
+  "png": "image/png",
+  "btif": "image/prs.btif",
+  "sgi": "image/sgi",
+  "svg": "image/svg+xml",
+  "svgz": "image/svg+xml",
+  "tiff": "image/tiff",
+  "tif": "image/tiff",
+  "psd": "image/vnd.adobe.photoshop",
+  "uvi": "image/vnd.dece.graphic",
+  "uvvi": "image/vnd.dece.graphic",
+  "uvg": "image/vnd.dece.graphic",
+  "uvvg": "image/vnd.dece.graphic",
+  "sub": "text/vnd.dvb.subtitle",
+  "djvu": "image/vnd.djvu",
+  "djv": "image/vnd.djvu",
+  "dwg": "image/vnd.dwg",
+  "dxf": "image/vnd.dxf",
+  "fbs": "image/vnd.fastbidsheet",
+  "fpx": "image/vnd.fpx",
+  "fst": "image/vnd.fst",
+  "mmr": "image/vnd.fujixerox.edmics-mmr",
+  "rlc": "image/vnd.fujixerox.edmics-rlc",
+  "mdi": "image/vnd.ms-modi",
+  "wdp": "image/vnd.ms-photo",
+  "npx": "image/vnd.net-fpx",
+  "wbmp": "image/vnd.wap.wbmp",
+  "xif": "image/vnd.xiff",
+  "webp": "image/webp",
+  "3ds": "image/x-3ds",
+  "ras": "image/x-cmu-raster",
+  "cmx": "image/x-cmx",
+  "fh": "image/x-freehand",
+  "fhc": "image/x-freehand",
+  "fh4": "image/x-freehand",
+  "fh5": "image/x-freehand",
+  "fh7": "image/x-freehand",
+  "ico": "image/x-icon",
+  "sid": "image/x-mrsid-image",
+  "pcx": "image/x-pcx",
+  "pic": "image/x-pict",
+  "pct": "image/x-pict",
+  "pnm": "image/x-portable-anymap",
+  "pbm": "image/x-portable-bitmap",
+  "pgm": "image/x-portable-graymap",
+  "ppm": "image/x-portable-pixmap",
+  "rgb": "image/x-rgb",
+  "tga": "image/x-tga",
+  "xbm": "image/x-xbitmap",
+  "xpm": "image/x-xpixmap",
+  "xwd": "image/x-xwindowdump",
+  "eml": "message/rfc822",
+  "mime": "message/rfc822",
+  "igs": "model/iges",
+  "iges": "model/iges",
+  "msh": "model/mesh",
+  "mesh": "model/mesh",
+  "silo": "model/mesh",
+  "dae": "model/vnd.collada+xml",
+  "dwf": "model/vnd.dwf",
+  "gdl": "model/vnd.gdl",
+  "gtw": "model/vnd.gtw",
+  "mts": "model/vnd.mts",
+  "vtu": "model/vnd.vtu",
+  "wrl": "model/vrml",
+  "vrml": "model/vrml",
+  "x3db": "model/x3d+binary",
+  "x3dbz": "model/x3d+binary",
+  "x3dv": "model/x3d+vrml",
+  "x3dvz": "model/x3d+vrml",
+  "x3d": "model/x3d+xml",
+  "x3dz": "model/x3d+xml",
+  "appcache": "text/cache-manifest",
+  "ics": "text/calendar",
+  "ifb": "text/calendar",
+  "css": "text/css",
+  "csv": "text/csv",
+  "html": "text/html",
+  "htm": "text/html",
+  "n3": "text/n3",
+  "txt": "text/plain",
+  "text": "text/plain",
+  "conf": "text/plain",
+  "def": "text/plain",
+  "list": "text/plain",
+  "log": "text/plain",
+  "in": "text/plain",
+  "dsc": "text/prs.lines.tag",
+  "rtx": "text/richtext",
+  "sgml": "text/sgml",
+  "sgm": "text/sgml",
+  "tsv": "text/tab-separated-values",
+  "t": "text/troff",
+  "tr": "text/troff",
+  "roff": "text/troff",
+  "man": "text/troff",
+  "me": "text/troff",
+  "ms": "text/troff",
+  "ttl": "text/turtle",
+  "uri": "text/uri-list",
+  "uris": "text/uri-list",
+  "urls": "text/uri-list",
+  "vcard": "text/vcard",
+  "curl": "text/vnd.curl",
+  "dcurl": "text/vnd.curl.dcurl",
+  "scurl": "text/vnd.curl.scurl",
+  "mcurl": "text/vnd.curl.mcurl",
+  "fly": "text/vnd.fly",
+  "flx": "text/vnd.fmi.flexstor",
+  "gv": "text/vnd.graphviz",
+  "3dml": "text/vnd.in3d.3dml",
+  "spot": "text/vnd.in3d.spot",
+  "jad": "text/vnd.sun.j2me.app-descriptor",
+  "wml": "text/vnd.wap.wml",
+  "wmls": "text/vnd.wap.wmlscript",
+  "s": "text/x-asm",
+  "asm": "text/x-asm",
+  "c": "text/x-c",
+  "cc": "text/x-c",
+  "cxx": "text/x-c",
+  "cpp": "text/x-c",
+  "h": "text/x-c",
+  "hh": "text/x-c",
+  "dic": "text/x-c",
+  "f": "text/x-fortran",
+  "for": "text/x-fortran",
+  "f77": "text/x-fortran",
+  "f90": "text/x-fortran",
+  "java": "text/x-java-source",
+  "opml": "text/x-opml",
+  "p": "text/x-pascal",
+  "pas": "text/x-pascal",
+  "nfo": "text/x-nfo",
+  "etx": "text/x-setext",
+  "sfv": "text/x-sfv",
+  "uu": "text/x-uuencode",
+  "vcs": "text/x-vcalendar",
+  "vcf": "text/x-vcard",
+  "3gp": "video/3gpp",
+  "3g2": "video/3gpp2",
+  "h261": "video/h261",
+  "h263": "video/h263",
+  "h264": "video/h264",
+  "jpgv": "video/jpeg",
+  "jpm": "video/jpm",
+  "jpgm": "video/jpm",
+  "mj2": "video/mj2",
+  "mjp2": "video/mj2",
+  "mp4": "video/mp4",
+  "mp4v": "video/mp4",
+  "mpg4": "video/mp4",
+  "mpeg": "video/mpeg",
+  "mpg": "video/mpeg",
+  "mpe": "video/mpeg",
+  "m1v": "video/mpeg",
+  "m2v": "video/mpeg",
+  "ogv": "video/ogg",
+  "qt": "video/quicktime",
+  "mov": "video/quicktime",
+  "uvh": "video/vnd.dece.hd",
+  "uvvh": "video/vnd.dece.hd",
+  "uvm": "video/vnd.dece.mobile",
+  "uvvm": "video/vnd.dece.mobile",
+  "uvp": "video/vnd.dece.pd",
+  "uvvp": "video/vnd.dece.pd",
+  "uvs": "video/vnd.dece.sd",
+  "uvvs": "video/vnd.dece.sd",
+  "uvv": "video/vnd.dece.video",
+  "uvvv": "video/vnd.dece.video",
+  "dvb": "video/vnd.dvb.file",
+  "fvt": "video/vnd.fvt",
+  "mxu": "video/vnd.mpegurl",
+  "m4u": "video/vnd.mpegurl",
+  "pyv": "video/vnd.ms-playready.media.pyv",
+  "uvu": "video/vnd.uvvu.mp4",
+  "uvvu": "video/vnd.uvvu.mp4",
+  "viv": "video/vnd.vivo",
+  "webm": "video/webm",
+  "f4v": "video/x-f4v",
+  "fli": "video/x-fli",
+  "flv": "video/x-flv",
+  "m4v": "video/x-m4v",
+  "mkv": "video/x-matroska",
+  "mk3d": "video/x-matroska",
+  "mks": "video/x-matroska",
+  "mng": "video/x-mng",
+  "asf": "video/x-ms-asf",
+  "asx": "video/x-ms-asf",
+  "vob": "video/x-ms-vob",
+  "wm": "video/x-ms-wm",
+  "wmv": "video/x-ms-wmv",
+  "wmx": "video/x-ms-wmx",
+  "wvx": "video/x-ms-wvx",
+  "avi": "video/x-msvideo",
+  "movie": "video/x-sgi-movie",
+  "smv": "video/x-smv",
+  "ice": "x-conference/x-cooltalk",
+  "vtt": "text/vtt",
+  "crx": "application/x-chrome-extension",
+  "htc": "text/x-component",
+  "manifest": "text/cache-manifest",
+  "buffer": "application/octet-stream",
+  "m4p": "application/mp4",
+  "m4a": "audio/mp4",
+  "ts": "video/MP2T",
+  "event-stream": "text/event-stream",
+  "webapp": "application/x-web-app-manifest+json",
+  "lua": "text/x-lua",
+  "luac": "application/x-lua-bytecode",
+  "markdown": "text/x-markdown",
+  "md": "text/x-markdown",
+  "mkd": "text/x-markdown"
+}
+  , extensions: {
+  "application/andrew-inset": "ez",
+  "application/applixware": "aw",
+  "application/atom+xml": "atom",
+  "application/atomcat+xml": "atomcat",
+  "application/atomsvc+xml": "atomsvc",
+  "application/ccxml+xml": "ccxml",
+  "application/cdmi-capability": "cdmia",
+  "application/cdmi-container": "cdmic",
+  "application/cdmi-domain": "cdmid",
+  "application/cdmi-object": "cdmio",
+  "application/cdmi-queue": "cdmiq",
+  "application/cu-seeme": "cu",
+  "application/davmount+xml": "davmount",
+  "application/docbook+xml": "dbk",
+  "application/dssc+der": "dssc",
+  "application/dssc+xml": "xdssc",
+  "application/ecmascript": "ecma",
+  "application/emma+xml": "emma",
+  "application/epub+zip": "epub",
+  "application/exi": "exi",
+  "application/font-tdpfr": "pfr",
+  "application/gml+xml": "gml",
+  "application/gpx+xml": "gpx",
+  "application/gxf": "gxf",
+  "application/hyperstudio": "stk",
+  "application/inkml+xml": "ink",
+  "application/ipfix": "ipfix",
+  "application/java-archive": "jar",
+  "application/java-serialized-object": "ser",
+  "application/java-vm": "class",
+  "application/javascript": "js",
+  "application/json": "json",
+  "application/jsonml+json": "jsonml",
+  "application/lost+xml": "lostxml",
+  "application/mac-binhex40": "hqx",
+  "application/mac-compactpro": "cpt",
+  "application/mads+xml": "mads",
+  "application/marc": "mrc",
+  "application/marcxml+xml": "mrcx",
+  "application/mathematica": "ma",
+  "application/mathml+xml": "mathml",
+  "application/mbox": "mbox",
+  "application/mediaservercontrol+xml": "mscml",
+  "application/metalink+xml": "metalink",
+  "application/metalink4+xml": "meta4",
+  "application/mets+xml": "mets",
+  "application/mods+xml": "mods",
+  "application/mp21": "m21",
+  "application/mp4": "mp4s",
+  "application/msword": "doc",
+  "application/mxf": "mxf",
+  "application/octet-stream": "bin",
+  "application/oda": "oda",
+  "application/oebps-package+xml": "opf",
+  "application/ogg": "ogx",
+  "application/omdoc+xml": "omdoc",
+  "application/onenote": "onetoc",
+  "application/oxps": "oxps",
+  "application/patch-ops-error+xml": "xer",
+  "application/pdf": "pdf",
+  "application/pgp-encrypted": "pgp",
+  "application/pgp-signature": "asc",
+  "application/pics-rules": "prf",
+  "application/pkcs10": "p10",
+  "application/pkcs7-mime": "p7m",
+  "application/pkcs7-signature": "p7s",
+  "application/pkcs8": "p8",
+  "application/pkix-attr-cert": "ac",
+  "application/pkix-cert": "cer",
+  "application/pkix-crl": "crl",
+  "application/pkix-pkipath": "pkipath",
+  "application/pkixcmp": "pki",
+  "application/pls+xml": "pls",
+  "application/postscript": "ai",
+  "application/prs.cww": "cww",
+  "application/pskc+xml": "pskcxml",
+  "application/rdf+xml": "rdf",
+  "application/reginfo+xml": "rif",
+  "application/relax-ng-compact-syntax": "rnc",
+  "application/resource-lists+xml": "rl",
+  "application/resource-lists-diff+xml": "rld",
+  "application/rls-services+xml": "rs",
+  "application/rpki-ghostbusters": "gbr",
+  "application/rpki-manifest": "mft",
+  "application/rpki-roa": "roa",
+  "application/rsd+xml": "rsd",
+  "application/rss+xml": "rss",
+  "application/rtf": "rtf",
+  "application/sbml+xml": "sbml",
+  "application/scvp-cv-request": "scq",
+  "application/scvp-cv-response": "scs",
+  "application/scvp-vp-request": "spq",
+  "application/scvp-vp-response": "spp",
+  "application/sdp": "sdp",
+  "application/set-payment-initiation": "setpay",
+  "application/set-registration-initiation": "setreg",
+  "application/shf+xml": "shf",
+  "application/smil+xml": "smi",
+  "application/sparql-query": "rq",
+  "application/sparql-results+xml": "srx",
+  "application/srgs": "gram",
+  "application/srgs+xml": "grxml",
+  "application/sru+xml": "sru",
+  "application/ssdl+xml": "ssdl",
+  "application/ssml+xml": "ssml",
+  "application/tei+xml": "tei",
+  "application/thraud+xml": "tfi",
+  "application/timestamped-data": "tsd",
+  "application/vnd.3gpp.pic-bw-large": "plb",
+  "application/vnd.3gpp.pic-bw-small": "psb",
+  "application/vnd.3gpp.pic-bw-var": "pvb",
+  "application/vnd.3gpp2.tcap": "tcap",
+  "application/vnd.3m.post-it-notes": "pwn",
+  "application/vnd.accpac.simply.aso": "aso",
+  "application/vnd.accpac.simply.imp": "imp",
+  "application/vnd.acucobol": "acu",
+  "application/vnd.acucorp": "atc",
+  "application/vnd.adobe.air-application-installer-package+zip": "air",
+  "application/vnd.adobe.formscentral.fcdt": "fcdt",
+  "application/vnd.adobe.fxp": "fxp",
+  "application/vnd.adobe.xdp+xml": "xdp",
+  "application/vnd.adobe.xfdf": "xfdf",
+  "application/vnd.ahead.space": "ahead",
+  "application/vnd.airzip.filesecure.azf": "azf",
+  "application/vnd.airzip.filesecure.azs": "azs",
+  "application/vnd.amazon.ebook": "azw",
+  "application/vnd.americandynamics.acc": "acc",
+  "application/vnd.amiga.ami": "ami",
+  "application/vnd.android.package-archive": "apk",
+  "application/vnd.anser-web-certificate-issue-initiation": "cii",
+  "application/vnd.anser-web-funds-transfer-initiation": "fti",
+  "application/vnd.antix.game-component": "atx",
+  "application/vnd.apple.installer+xml": "mpkg",
+  "application/vnd.apple.mpegurl": "m3u8",
+  "application/vnd.aristanetworks.swi": "swi",
+  "application/vnd.astraea-software.iota": "iota",
+  "application/vnd.audiograph": "aep",
+  "application/vnd.blueice.multipass": "mpm",
+  "application/vnd.bmi": "bmi",
+  "application/vnd.businessobjects": "rep",
+  "application/vnd.chemdraw+xml": "cdxml",
+  "application/vnd.chipnuts.karaoke-mmd": "mmd",
+  "application/vnd.cinderella": "cdy",
+  "application/vnd.claymore": "cla",
+  "application/vnd.cloanto.rp9": "rp9",
+  "application/vnd.clonk.c4group": "c4g",
+  "application/vnd.cluetrust.cartomobile-config": "c11amc",
+  "application/vnd.cluetrust.cartomobile-config-pkg": "c11amz",
+  "application/vnd.commonspace": "csp",
+  "application/vnd.contact.cmsg": "cdbcmsg",
+  "application/vnd.cosmocaller": "cmc",
+  "application/vnd.crick.clicker": "clkx",
+  "application/vnd.crick.clicker.keyboard": "clkk",
+  "application/vnd.crick.clicker.palette": "clkp",
+  "application/vnd.crick.clicker.template": "clkt",
+  "application/vnd.crick.clicker.wordbank": "clkw",
+  "application/vnd.criticaltools.wbs+xml": "wbs",
+  "application/vnd.ctc-posml": "pml",
+  "application/vnd.cups-ppd": "ppd",
+  "application/vnd.curl.car": "car",
+  "application/vnd.curl.pcurl": "pcurl",
+  "application/vnd.dart": "dart",
+  "application/vnd.data-vision.rdz": "rdz",
+  "application/vnd.dece.data": "uvf",
+  "application/vnd.dece.ttml+xml": "uvt",
+  "application/vnd.dece.unspecified": "uvx",
+  "application/vnd.dece.zip": "uvz",
+  "application/vnd.denovo.fcselayout-link": "fe_launch",
+  "application/vnd.dna": "dna",
+  "application/vnd.dolby.mlp": "mlp",
+  "application/vnd.dpgraph": "dpg",
+  "application/vnd.dreamfactory": "dfac",
+  "application/vnd.ds-keypoint": "kpxx",
+  "application/vnd.dvb.ait": "ait",
+  "application/vnd.dvb.service": "svc",
+  "application/vnd.dynageo": "geo",
+  "application/vnd.ecowin.chart": "mag",
+  "application/vnd.enliven": "nml",
+  "application/vnd.epson.esf": "esf",
+  "application/vnd.epson.msf": "msf",
+  "application/vnd.epson.quickanime": "qam",
+  "application/vnd.epson.salt": "slt",
+  "application/vnd.epson.ssf": "ssf",
+  "application/vnd.eszigno3+xml": "es3",
+  "application/vnd.ezpix-album": "ez2",
+  "application/vnd.ezpix-package": "ez3",
+  "application/vnd.fdf": "fdf",
+  "application/vnd.fdsn.mseed": "mseed",
+  "application/vnd.fdsn.seed": "seed",
+  "application/vnd.flographit": "gph",
+  "application/vnd.fluxtime.clip": "ftc",
+  "application/vnd.framemaker": "fm",
+  "application/vnd.frogans.fnc": "fnc",
+  "application/vnd.frogans.ltf": "ltf",
+  "application/vnd.fsc.weblaunch": "fsc",
+  "application/vnd.fujitsu.oasys": "oas",
+  "application/vnd.fujitsu.oasys2": "oa2",
+  "application/vnd.fujitsu.oasys3": "oa3",
+  "application/vnd.fujitsu.oasysgp": "fg5",
+  "application/vnd.fujitsu.oasysprs": "bh2",
+  "application/vnd.fujixerox.ddd": "ddd",
+  "application/vnd.fujixerox.docuworks": "xdw",
+  "application/vnd.fujixerox.docuworks.binder": "xbd",
+  "application/vnd.fuzzysheet": "fzs",
+  "application/vnd.genomatix.tuxedo": "txd",
+  "application/vnd.geogebra.file": "ggb",
+  "application/vnd.geogebra.tool": "ggt",
+  "application/vnd.geometry-explorer": "gex",
+  "application/vnd.geonext": "gxt",
+  "application/vnd.geoplan": "g2w",
+  "application/vnd.geospace": "g3w",
+  "application/vnd.gmx": "gmx",
+  "application/vnd.google-earth.kml+xml": "kml",
+  "application/vnd.google-earth.kmz": "kmz",
+  "application/vnd.grafeq": "gqf",
+  "application/vnd.groove-account": "gac",
+  "application/vnd.groove-help": "ghf",
+  "application/vnd.groove-identity-message": "gim",
+  "application/vnd.groove-injector": "grv",
+  "application/vnd.groove-tool-message": "gtm",
+  "application/vnd.groove-tool-template": "tpl",
+  "application/vnd.groove-vcard": "vcg",
+  "application/vnd.hal+xml": "hal",
+  "application/vnd.handheld-entertainment+xml": "zmm",
+  "application/vnd.hbci": "hbci",
+  "application/vnd.hhe.lesson-player": "les",
+  "application/vnd.hp-hpgl": "hpgl",
+  "application/vnd.hp-hpid": "hpid",
+  "application/vnd.hp-hps": "hps",
+  "application/vnd.hp-jlyt": "jlt",
+  "application/vnd.hp-pcl": "pcl",
+  "application/vnd.hp-pclxl": "pclxl",
+  "application/vnd.hydrostatix.sof-data": "sfd-hdstx",
+  "application/vnd.ibm.minipay": "mpy",
+  "application/vnd.ibm.modcap": "afp",
+  "application/vnd.ibm.rights-management": "irm",
+  "application/vnd.ibm.secure-container": "sc",
+  "application/vnd.iccprofile": "icc",
+  "application/vnd.igloader": "igl",
+  "application/vnd.immervision-ivp": "ivp",
+  "application/vnd.immervision-ivu": "ivu",
+  "application/vnd.insors.igm": "igm",
+  "application/vnd.intercon.formnet": "xpw",
+  "application/vnd.intergeo": "i2g",
+  "application/vnd.intu.qbo": "qbo",
+  "application/vnd.intu.qfx": "qfx",
+  "application/vnd.ipunplugged.rcprofile": "rcprofile",
+  "application/vnd.irepository.package+xml": "irp",
+  "application/vnd.is-xpr": "xpr",
+  "application/vnd.isac.fcs": "fcs",
+  "application/vnd.jam": "jam",
+  "application/vnd.jcp.javame.midlet-rms": "rms",
+  "application/vnd.jisp": "jisp",
+  "application/vnd.joost.joda-archive": "joda",
+  "application/vnd.kahootz": "ktz",
+  "application/vnd.kde.karbon": "karbon",
+  "application/vnd.kde.kchart": "chrt",
+  "application/vnd.kde.kformula": "kfo",
+  "application/vnd.kde.kivio": "flw",
+  "application/vnd.kde.kontour": "kon",
+  "application/vnd.kde.kpresenter": "kpr",
+  "application/vnd.kde.kspread": "ksp",
+  "application/vnd.kde.kword": "kwd",
+  "application/vnd.kenameaapp": "htke",
+  "application/vnd.kidspiration": "kia",
+  "application/vnd.kinar": "kne",
+  "application/vnd.koan": "skp",
+  "application/vnd.kodak-descriptor": "sse",
+  "application/vnd.las.las+xml": "lasxml",
+  "application/vnd.llamagraphics.life-balance.desktop": "lbd",
+  "application/vnd.llamagraphics.life-balance.exchange+xml": "lbe",
+  "application/vnd.lotus-1-2-3": "123",
+  "application/vnd.lotus-approach": "apr",
+  "application/vnd.lotus-freelance": "pre",
+  "application/vnd.lotus-notes": "nsf",
+  "application/vnd.lotus-organizer": "org",
+  "application/vnd.lotus-screencam": "scm",
+  "application/vnd.lotus-wordpro": "lwp",
+  "application/vnd.macports.portpkg": "portpkg",
+  "application/vnd.mcd": "mcd",
+  "application/vnd.medcalcdata": "mc1",
+  "application/vnd.mediastation.cdkey": "cdkey",
+  "application/vnd.mfer": "mwf",
+  "application/vnd.mfmp": "mfm",
+  "application/vnd.micrografx.flo": "flo",
+  "application/vnd.micrografx.igx": "igx",
+  "application/vnd.mif": "mif",
+  "application/vnd.mobius.daf": "daf",
+  "application/vnd.mobius.dis": "dis",
+  "application/vnd.mobius.mbk": "mbk",
+  "application/vnd.mobius.mqy": "mqy",
+  "application/vnd.mobius.msl": "msl",
+  "application/vnd.mobius.plc": "plc",
+  "application/vnd.mobius.txf": "txf",
+  "application/vnd.mophun.application": "mpn",
+  "application/vnd.mophun.certificate": "mpc",
+  "application/vnd.mozilla.xul+xml": "xul",
+  "application/vnd.ms-artgalry": "cil",
+  "application/vnd.ms-cab-compressed": "cab",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.ms-excel.addin.macroenabled.12": "xlam",
+  "application/vnd.ms-excel.sheet.binary.macroenabled.12": "xlsb",
+  "application/vnd.ms-excel.sheet.macroenabled.12": "xlsm",
+  "application/vnd.ms-excel.template.macroenabled.12": "xltm",
+  "application/vnd.ms-fontobject": "eot",
+  "application/vnd.ms-htmlhelp": "chm",
+  "application/vnd.ms-ims": "ims",
+  "application/vnd.ms-lrm": "lrm",
+  "application/vnd.ms-officetheme": "thmx",
+  "application/vnd.ms-pki.seccat": "cat",
+  "application/vnd.ms-pki.stl": "stl",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.ms-powerpoint.addin.macroenabled.12": "ppam",
+  "application/vnd.ms-powerpoint.presentation.macroenabled.12": "pptm",
+  "application/vnd.ms-powerpoint.slide.macroenabled.12": "sldm",
+  "application/vnd.ms-powerpoint.slideshow.macroenabled.12": "ppsm",
+  "application/vnd.ms-powerpoint.template.macroenabled.12": "potm",
+  "application/vnd.ms-project": "mpp",
+  "application/vnd.ms-word.document.macroenabled.12": "docm",
+  "application/vnd.ms-word.template.macroenabled.12": "dotm",
+  "application/vnd.ms-works": "wps",
+  "application/vnd.ms-wpl": "wpl",
+  "application/vnd.ms-xpsdocument": "xps",
+  "application/vnd.mseq": "mseq",
+  "application/vnd.musician": "mus",
+  "application/vnd.muvee.style": "msty",
+  "application/vnd.mynfc": "taglet",
+  "application/vnd.neurolanguage.nlu": "nlu",
+  "application/vnd.nitf": "ntf",
+  "application/vnd.noblenet-directory": "nnd",
+  "application/vnd.noblenet-sealer": "nns",
+  "application/vnd.noblenet-web": "nnw",
+  "application/vnd.nokia.n-gage.data": "ngdat",
+  "application/vnd.nokia.n-gage.symbian.install": "n-gage",
+  "application/vnd.nokia.radio-preset": "rpst",
+  "application/vnd.nokia.radio-presets": "rpss",
+  "application/vnd.novadigm.edm": "edm",
+  "application/vnd.novadigm.edx": "edx",
+  "application/vnd.novadigm.ext": "ext",
+  "application/vnd.oasis.opendocument.chart": "odc",
+  "application/vnd.oasis.opendocument.chart-template": "otc",
+  "application/vnd.oasis.opendocument.database": "odb",
+  "application/vnd.oasis.opendocument.formula": "odf",
+  "application/vnd.oasis.opendocument.formula-template": "odft",
+  "application/vnd.oasis.opendocument.graphics": "odg",
+  "application/vnd.oasis.opendocument.graphics-template": "otg",
+  "application/vnd.oasis.opendocument.image": "odi",
+  "application/vnd.oasis.opendocument.image-template": "oti",
+  "application/vnd.oasis.opendocument.presentation": "odp",
+  "application/vnd.oasis.opendocument.presentation-template": "otp",
+  "application/vnd.oasis.opendocument.spreadsheet": "ods",
+  "application/vnd.oasis.opendocument.spreadsheet-template": "ots",
+  "application/vnd.oasis.opendocument.text": "odt",
+  "application/vnd.oasis.opendocument.text-master": "odm",
+  "application/vnd.oasis.opendocument.text-template": "ott",
+  "application/vnd.oasis.opendocument.text-web": "oth",
+  "application/vnd.olpc-sugar": "xo",
+  "application/vnd.oma.dd2+xml": "dd2",
+  "application/vnd.openofficeorg.extension": "oxt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.openxmlformats-officedocument.presentationml.slide": "sldx",
+  "application/vnd.openxmlformats-officedocument.presentationml.slideshow": "ppsx",
+  "application/vnd.openxmlformats-officedocument.presentationml.template": "potx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.template": "xltx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.template": "dotx",
+  "application/vnd.osgeo.mapguide.package": "mgp",
+  "application/vnd.osgi.dp": "dp",
+  "application/vnd.osgi.subsystem": "esa",
+  "application/vnd.palm": "pdb",
+  "application/vnd.pawaafile": "paw",
+  "application/vnd.pg.format": "str",
+  "application/vnd.pg.osasli": "ei6",
+  "application/vnd.picsel": "efif",
+  "application/vnd.pmi.widget": "wg",
+  "application/vnd.pocketlearn": "plf",
+  "application/vnd.powerbuilder6": "pbd",
+  "application/vnd.previewsystems.box": "box",
+  "application/vnd.proteus.magazine": "mgz",
+  "application/vnd.publishare-delta-tree": "qps",
+  "application/vnd.pvi.ptid1": "ptid",
+  "application/vnd.quark.quarkxpress": "qxd",
+  "application/vnd.realvnc.bed": "bed",
+  "application/vnd.recordare.musicxml": "mxl",
+  "application/vnd.recordare.musicxml+xml": "musicxml",
+  "application/vnd.rig.cryptonote": "cryptonote",
+  "application/vnd.rim.cod": "cod",
+  "application/vnd.rn-realmedia": "rm",
+  "application/vnd.rn-realmedia-vbr": "rmvb",
+  "application/vnd.route66.link66+xml": "link66",
+  "application/vnd.sailingtracker.track": "st",
+  "application/vnd.seemail": "see",
+  "application/vnd.sema": "sema",
+  "application/vnd.semd": "semd",
+  "application/vnd.semf": "semf",
+  "application/vnd.shana.informed.formdata": "ifm",
+  "application/vnd.shana.informed.formtemplate": "itp",
+  "application/vnd.shana.informed.interchange": "iif",
+  "application/vnd.shana.informed.package": "ipk",
+  "application/vnd.simtech-mindmapper": "twd",
+  "application/vnd.smaf": "mmf",
+  "application/vnd.smart.teacher": "teacher",
+  "application/vnd.solent.sdkm+xml": "sdkm",
+  "application/vnd.spotfire.dxp": "dxp",
+  "application/vnd.spotfire.sfs": "sfs",
+  "application/vnd.stardivision.calc": "sdc",
+  "application/vnd.stardivision.draw": "sda",
+  "application/vnd.stardivision.impress": "sdd",
+  "application/vnd.stardivision.math": "smf",
+  "application/vnd.stardivision.writer": "sdw",
+  "application/vnd.stardivision.writer-global": "sgl",
+  "application/vnd.stepmania.package": "smzip",
+  "application/vnd.stepmania.stepchart": "sm",
+  "application/vnd.sun.xml.calc": "sxc",
+  "application/vnd.sun.xml.calc.template": "stc",
+  "application/vnd.sun.xml.draw": "sxd",
+  "application/vnd.sun.xml.draw.template": "std",
+  "application/vnd.sun.xml.impress": "sxi",
+  "application/vnd.sun.xml.impress.template": "sti",
+  "application/vnd.sun.xml.math": "sxm",
+  "application/vnd.sun.xml.writer": "sxw",
+  "application/vnd.sun.xml.writer.global": "sxg",
+  "application/vnd.sun.xml.writer.template": "stw",
+  "application/vnd.sus-calendar": "sus",
+  "application/vnd.svd": "svd",
+  "application/vnd.symbian.install": "sis",
+  "application/vnd.syncml+xml": "xsm",
+  "application/vnd.syncml.dm+wbxml": "bdm",
+  "application/vnd.syncml.dm+xml": "xdm",
+  "application/vnd.tao.intent-module-archive": "tao",
+  "application/vnd.tcpdump.pcap": "pcap",
+  "application/vnd.tmobile-livetv": "tmo",
+  "application/vnd.trid.tpt": "tpt",
+  "application/vnd.triscape.mxs": "mxs",
+  "application/vnd.trueapp": "tra",
+  "application/vnd.ufdl": "ufd",
+  "application/vnd.uiq.theme": "utz",
+  "application/vnd.umajin": "umj",
+  "application/vnd.unity": "unityweb",
+  "application/vnd.uoml+xml": "uoml",
+  "application/vnd.vcx": "vcx",
+  "application/vnd.visio": "vsd",
+  "application/vnd.visionary": "vis",
+  "application/vnd.vsf": "vsf",
+  "application/vnd.wap.wbxml": "wbxml",
+  "application/vnd.wap.wmlc": "wmlc",
+  "application/vnd.wap.wmlscriptc": "wmlsc",
+  "application/vnd.webturbo": "wtb",
+  "application/vnd.wolfram.player": "nbp",
+  "application/vnd.wordperfect": "wpd",
+  "application/vnd.wqd": "wqd",
+  "application/vnd.wt.stf": "stf",
+  "application/vnd.xara": "xar",
+  "application/vnd.xfdl": "xfdl",
+  "application/vnd.yamaha.hv-dic": "hvd",
+  "application/vnd.yamaha.hv-script": "hvs",
+  "application/vnd.yamaha.hv-voice": "hvp",
+  "application/vnd.yamaha.openscoreformat": "osf",
+  "application/vnd.yamaha.openscoreformat.osfpvg+xml": "osfpvg",
+  "application/vnd.yamaha.smaf-audio": "saf",
+  "application/vnd.yamaha.smaf-phrase": "spf",
+  "application/vnd.yellowriver-custom-menu": "cmp",
+  "application/vnd.zul": "zir",
+  "application/vnd.zzazz.deck+xml": "zaz",
+  "application/voicexml+xml": "vxml",
+  "application/widget": "wgt",
+  "application/winhlp": "hlp",
+  "application/wsdl+xml": "wsdl",
+  "application/wspolicy+xml": "wspolicy",
+  "application/x-7z-compressed": "7z",
+  "application/x-abiword": "abw",
+  "application/x-ace-compressed": "ace",
+  "application/x-apple-diskimage": "dmg",
+  "application/x-authorware-bin": "aab",
+  "application/x-authorware-map": "aam",
+  "application/x-authorware-seg": "aas",
+  "application/x-bcpio": "bcpio",
+  "application/x-bittorrent": "torrent",
+  "application/x-blorb": "blb",
+  "application/x-bzip": "bz",
+  "application/x-bzip2": "bz2",
+  "application/x-cbr": "cbr",
+  "application/x-cdlink": "vcd",
+  "application/x-cfs-compressed": "cfs",
+  "application/x-chat": "chat",
+  "application/x-chess-pgn": "pgn",
+  "application/x-conference": "nsc",
+  "application/x-cpio": "cpio",
+  "application/x-csh": "csh",
+  "application/x-debian-package": "deb",
+  "application/x-dgc-compressed": "dgc",
+  "application/x-director": "dir",
+  "application/x-doom": "wad",
+  "application/x-dtbncx+xml": "ncx",
+  "application/x-dtbook+xml": "dtb",
+  "application/x-dtbresource+xml": "res",
+  "application/x-dvi": "dvi",
+  "application/x-envoy": "evy",
+  "application/x-eva": "eva",
+  "application/x-font-bdf": "bdf",
+  "application/x-font-ghostscript": "gsf",
+  "application/x-font-linux-psf": "psf",
+  "application/x-font-otf": "otf",
+  "application/x-font-pcf": "pcf",
+  "application/x-font-snf": "snf",
+  "application/x-font-ttf": "ttf",
+  "application/x-font-type1": "pfa",
+  "application/x-font-woff": "woff",
+  "application/x-freearc": "arc",
+  "application/x-futuresplash": "spl",
+  "application/x-gca-compressed": "gca",
+  "application/x-glulx": "ulx",
+  "application/x-gnumeric": "gnumeric",
+  "application/x-gramps-xml": "gramps",
+  "application/x-gtar": "gtar",
+  "application/x-hdf": "hdf",
+  "application/x-install-instructions": "install",
+  "application/x-iso9660-image": "iso",
+  "application/x-java-jnlp-file": "jnlp",
+  "application/x-latex": "latex",
+  "application/x-lzh-compressed": "lzh",
+  "application/x-mie": "mie",
+  "application/x-mobipocket-ebook": "prc",
+  "application/x-ms-application": "application",
+  "application/x-ms-shortcut": "lnk",
+  "application/x-ms-wmd": "wmd",
+  "application/x-ms-wmz": "wmz",
+  "application/x-ms-xbap": "xbap",
+  "application/x-msaccess": "mdb",
+  "application/x-msbinder": "obd",
+  "application/x-mscardfile": "crd",
+  "application/x-msclip": "clp",
+  "application/x-msdownload": "exe",
+  "application/x-msmediaview": "mvb",
+  "application/x-msmetafile": "wmf",
+  "application/x-msmoney": "mny",
+  "application/x-mspublisher": "pub",
+  "application/x-msschedule": "scd",
+  "application/x-msterminal": "trm",
+  "application/x-mswrite": "wri",
+  "application/x-netcdf": "nc",
+  "application/x-nzb": "nzb",
+  "application/x-pkcs12": "p12",
+  "application/x-pkcs7-certificates": "p7b",
+  "application/x-pkcs7-certreqresp": "p7r",
+  "application/x-rar-compressed": "rar",
+  "application/x-research-info-systems": "ris",
+  "application/x-sh": "sh",
+  "application/x-shar": "shar",
+  "application/x-shockwave-flash": "swf",
+  "application/x-silverlight-app": "xap",
+  "application/x-sql": "sql",
+  "application/x-stuffit": "sit",
+  "application/x-stuffitx": "sitx",
+  "application/x-subrip": "srt",
+  "application/x-sv4cpio": "sv4cpio",
+  "application/x-sv4crc": "sv4crc",
+  "application/x-t3vm-image": "t3",
+  "application/x-tads": "gam",
+  "application/x-tar": "tar",
+  "application/x-tcl": "tcl",
+  "application/x-tex": "tex",
+  "application/x-tex-tfm": "tfm",
+  "application/x-texinfo": "texinfo",
+  "application/x-tgif": "obj",
+  "application/x-ustar": "ustar",
+  "application/x-wais-source": "src",
+  "application/x-x509-ca-cert": "der",
+  "application/x-xfig": "fig",
+  "application/x-xliff+xml": "xlf",
+  "application/x-xpinstall": "xpi",
+  "application/x-xz": "xz",
+  "application/x-zmachine": "z1",
+  "application/xaml+xml": "xaml",
+  "application/xcap-diff+xml": "xdf",
+  "application/xenc+xml": "xenc",
+  "application/xhtml+xml": "xhtml",
+  "application/xml": "xml",
+  "application/xml-dtd": "dtd",
+  "application/xop+xml": "xop",
+  "application/xproc+xml": "xpl",
+  "application/xslt+xml": "xslt",
+  "application/xspf+xml": "xspf",
+  "application/xv+xml": "mxml",
+  "application/yang": "yang",
+  "application/yin+xml": "yin",
+  "application/zip": "zip",
+  "audio/adpcm": "adp",
+  "audio/basic": "au",
+  "audio/midi": "mid",
+  "audio/mp4": "mp4a",
+  "audio/mpeg": "mpga",
+  "audio/ogg": "oga",
+  "audio/s3m": "s3m",
+  "audio/silk": "sil",
+  "audio/vnd.dece.audio": "uva",
+  "audio/vnd.digital-winds": "eol",
+  "audio/vnd.dra": "dra",
+  "audio/vnd.dts": "dts",
+  "audio/vnd.dts.hd": "dtshd",
+  "audio/vnd.lucent.voice": "lvp",
+  "audio/vnd.ms-playready.media.pya": "pya",
+  "audio/vnd.nuera.ecelp4800": "ecelp4800",
+  "audio/vnd.nuera.ecelp7470": "ecelp7470",
+  "audio/vnd.nuera.ecelp9600": "ecelp9600",
+  "audio/vnd.rip": "rip",
+  "audio/webm": "weba",
+  "audio/x-aac": "aac",
+  "audio/x-aiff": "aif",
+  "audio/x-caf": "caf",
+  "audio/x-flac": "flac",
+  "audio/x-matroska": "mka",
+  "audio/x-mpegurl": "m3u",
+  "audio/x-ms-wax": "wax",
+  "audio/x-ms-wma": "wma",
+  "audio/x-pn-realaudio": "ram",
+  "audio/x-pn-realaudio-plugin": "rmp",
+  "audio/x-wav": "wav",
+  "audio/xm": "xm",
+  "chemical/x-cdx": "cdx",
+  "chemical/x-cif": "cif",
+  "chemical/x-cmdf": "cmdf",
+  "chemical/x-cml": "cml",
+  "chemical/x-csml": "csml",
+  "chemical/x-xyz": "xyz",
+  "image/bmp": "bmp",
+  "image/cgm": "cgm",
+  "image/g3fax": "g3",
+  "image/gif": "gif",
+  "image/ief": "ief",
+  "image/jpeg": "jpeg",
+  "image/ktx": "ktx",
+  "image/png": "png",
+  "image/prs.btif": "btif",
+  "image/sgi": "sgi",
+  "image/svg+xml": "svg",
+  "image/tiff": "tiff",
+  "image/vnd.adobe.photoshop": "psd",
+  "image/vnd.dece.graphic": "uvi",
+  "image/vnd.dvb.subtitle": "sub",
+  "image/vnd.djvu": "djvu",
+  "image/vnd.dwg": "dwg",
+  "image/vnd.dxf": "dxf",
+  "image/vnd.fastbidsheet": "fbs",
+  "image/vnd.fpx": "fpx",
+  "image/vnd.fst": "fst",
+  "image/vnd.fujixerox.edmics-mmr": "mmr",
+  "image/vnd.fujixerox.edmics-rlc": "rlc",
+  "image/vnd.ms-modi": "mdi",
+  "image/vnd.ms-photo": "wdp",
+  "image/vnd.net-fpx": "npx",
+  "image/vnd.wap.wbmp": "wbmp",
+  "image/vnd.xiff": "xif",
+  "image/webp": "webp",
+  "image/x-3ds": "3ds",
+  "image/x-cmu-raster": "ras",
+  "image/x-cmx": "cmx",
+  "image/x-freehand": "fh",
+  "image/x-icon": "ico",
+  "image/x-mrsid-image": "sid",
+  "image/x-pcx": "pcx",
+  "image/x-pict": "pic",
+  "image/x-portable-anymap": "pnm",
+  "image/x-portable-bitmap": "pbm",
+  "image/x-portable-graymap": "pgm",
+  "image/x-portable-pixmap": "ppm",
+  "image/x-rgb": "rgb",
+  "image/x-tga": "tga",
+  "image/x-xbitmap": "xbm",
+  "image/x-xpixmap": "xpm",
+  "image/x-xwindowdump": "xwd",
+  "message/rfc822": "eml",
+  "model/iges": "igs",
+  "model/mesh": "msh",
+  "model/vnd.collada+xml": "dae",
+  "model/vnd.dwf": "dwf",
+  "model/vnd.gdl": "gdl",
+  "model/vnd.gtw": "gtw",
+  "model/vnd.mts": "mts",
+  "model/vnd.vtu": "vtu",
+  "model/vrml": "wrl",
+  "model/x3d+binary": "x3db",
+  "model/x3d+vrml": "x3dv",
+  "model/x3d+xml": "x3d",
+  "text/cache-manifest": "appcache",
+  "text/calendar": "ics",
+  "text/css": "css",
+  "text/csv": "csv",
+  "text/html": "html",
+  "text/n3": "n3",
+  "text/plain": "txt",
+  "text/prs.lines.tag": "dsc",
+  "text/richtext": "rtx",
+  "text/sgml": "sgml",
+  "text/tab-separated-values": "tsv",
+  "text/troff": "t",
+  "text/turtle": "ttl",
+  "text/uri-list": "uri",
+  "text/vcard": "vcard",
+  "text/vnd.curl": "curl",
+  "text/vnd.curl.dcurl": "dcurl",
+  "text/vnd.curl.scurl": "scurl",
+  "text/vnd.curl.mcurl": "mcurl",
+  "text/vnd.dvb.subtitle": "sub",
+  "text/vnd.fly": "fly",
+  "text/vnd.fmi.flexstor": "flx",
+  "text/vnd.graphviz": "gv",
+  "text/vnd.in3d.3dml": "3dml",
+  "text/vnd.in3d.spot": "spot",
+  "text/vnd.sun.j2me.app-descriptor": "jad",
+  "text/vnd.wap.wml": "wml",
+  "text/vnd.wap.wmlscript": "wmls",
+  "text/x-asm": "s",
+  "text/x-c": "c",
+  "text/x-fortran": "f",
+  "text/x-java-source": "java",
+  "text/x-opml": "opml",
+  "text/x-pascal": "p",
+  "text/x-nfo": "nfo",
+  "text/x-setext": "etx",
+  "text/x-sfv": "sfv",
+  "text/x-uuencode": "uu",
+  "text/x-vcalendar": "vcs",
+  "text/x-vcard": "vcf",
+  "video/3gpp": "3gp",
+  "video/3gpp2": "3g2",
+  "video/h261": "h261",
+  "video/h263": "h263",
+  "video/h264": "h264",
+  "video/jpeg": "jpgv",
+  "video/jpm": "jpm",
+  "video/mj2": "mj2",
+  "video/mp4": "mp4",
+  "video/mpeg": "mpeg",
+  "video/ogg": "ogv",
+  "video/quicktime": "qt",
+  "video/vnd.dece.hd": "uvh",
+  "video/vnd.dece.mobile": "uvm",
+  "video/vnd.dece.pd": "uvp",
+  "video/vnd.dece.sd": "uvs",
+  "video/vnd.dece.video": "uvv",
+  "video/vnd.dvb.file": "dvb",
+  "video/vnd.fvt": "fvt",
+  "video/vnd.mpegurl": "mxu",
+  "video/vnd.ms-playready.media.pyv": "pyv",
+  "video/vnd.uvvu.mp4": "uvu",
+  "video/vnd.vivo": "viv",
+  "video/webm": "webm",
+  "video/x-f4v": "f4v",
+  "video/x-fli": "fli",
+  "video/x-flv": "flv",
+  "video/x-m4v": "m4v",
+  "video/x-matroska": "mkv",
+  "video/x-mng": "mng",
+  "video/x-ms-asf": "asf",
+  "video/x-ms-vob": "vob",
+  "video/x-ms-wm": "wm",
+  "video/x-ms-wmv": "wmv",
+  "video/x-ms-wmx": "wmx",
+  "video/x-ms-wvx": "wvx",
+  "video/x-msvideo": "avi",
+  "video/x-sgi-movie": "movie",
+  "video/x-smv": "smv",
+  "x-conference/x-cooltalk": "ice",
+  "text/vtt": "vtt",
+  "application/x-chrome-extension": "crx",
+  "text/x-component": "htc",
+  "video/MP2T": "ts",
+  "text/event-stream": "event-stream",
+  "application/x-web-app-manifest+json": "webapp",
+  "text/x-lua": "lua",
+  "application/x-lua-bytecode": "luac",
+  "text/x-markdown": "markdown"
+}
+  , extension: function (mimeType) {
+  var type = mimeType.match(/^\s*([^;\s]*)(?:;|\s|$)/)[1].toLowerCase();
+  return this.extensions[type];
+}
+  , define: function (map) {
+  for (var type in map) {
+    var exts = map[type];
+
+    for (var i = 0; i < exts.length; i++) {
+      if (false && this.types[exts]) {
+        console.warn(this._loading.replace(/.*\//, ''), 'changes "' + exts[i] + '" extension type from ' +
+          this.types[exts] + ' to ' + type);
+      }
+
+      this.types[exts[i]] = type;
+    }
+
+    // Default extension is the first one we encounter
+    if (!this.extensions[type]) {
+      this.extensions[type] = exts[0];
+    }
+  }
+}
+  , charsets: {lookup: function (mimeType, fallback) {
+    // Assume text types are utf8
+    return (/^text\//).test(mimeType) ? 'UTF-8' : fallback;
+  }}
+}
+mime.types.constructor = undefined
+mime.extensions.constructor = undefined
+},{}],65:[function(require,module,exports){
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"PcZj9L":[function(require,module,exports){
 var TA = require('typedarray')
 var xDataView = typeof DataView === 'undefined'
@@ -54351,7 +56757,7 @@ function packF32(v) { return packIEEE754(v, 8, 23); }
 },{}]},{},[])
 ;;module.exports=require("native-buffer-browserify").Buffer
 
-},{}],64:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -54406,7 +56812,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],65:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 var Buffer=require("__browserify_Buffer");(function () {
   "use strict";
 
@@ -54426,7 +56832,7 @@ var Buffer=require("__browserify_Buffer");(function () {
   module.exports = btoa;
 }());
 
-},{"__browserify_Buffer":63}],66:[function(require,module,exports){
+},{"__browserify_Buffer":65}],68:[function(require,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -54654,7 +57060,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS.AES;
 
 }));
-},{"./cipher-core":67,"./core":68,"./enc-base64":69,"./evpkdf":71,"./md5":73}],67:[function(require,module,exports){
+},{"./cipher-core":69,"./core":70,"./enc-base64":71,"./evpkdf":73,"./md5":75}],69:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -55530,7 +57936,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 
 
 }));
-},{"./core":68}],68:[function(require,module,exports){
+},{"./core":70}],70:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -56276,7 +58682,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS;
 
 }));
-},{}],69:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -56400,7 +58806,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS.enc.Base64;
 
 }));
-},{"./core":68}],70:[function(require,module,exports){
+},{"./core":70}],72:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -56419,7 +58825,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS.enc.Utf8;
 
 }));
-},{"./core":68}],71:[function(require,module,exports){
+},{"./core":70}],73:[function(require,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -56552,7 +58958,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS.EvpKDF;
 
 }));
-},{"./core":68,"./hmac":72,"./sha1":74}],72:[function(require,module,exports){
+},{"./core":70,"./hmac":74,"./sha1":76}],74:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -56696,7 +59102,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 
 
 }));
-},{"./core":68}],73:[function(require,module,exports){
+},{"./core":70}],75:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -56965,7 +59371,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS.MD5;
 
 }));
-},{"./core":68}],74:[function(require,module,exports){
+},{"./core":70}],76:[function(require,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -57116,7 +59522,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 	return CryptoJS.SHA1;
 
 }));
-},{"./core":68}],75:[function(require,module,exports){
+},{"./core":70}],77:[function(require,module,exports){
 // Diacritics.js
 // 
 // Started as something to be an equivalent of the Google Java Library diacritics library for JavaScript.
@@ -57269,7 +59675,7 @@ var Buffer=require("__browserify_Buffer");(function () {
 
   return output;
 });
-},{}],76:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 var process=require("__browserify_process");// vim:ts=4:sts=4:sw=4:
 /*!
  *
@@ -59175,7 +61581,408 @@ return Q;
 
 });
 
-},{"__browserify_process":64}],77:[function(require,module,exports){
+},{"__browserify_process":66}],79:[function(require,module,exports){
+(function(global) {
+
+  var WORKER_PATH;
+  var encoderWorker;
+  
+  var initWorker = function() {
+    WORKER_PATH = WORKER_PATH || global.workerPath + 'js/recorderWorker.js';
+    try {
+      encoderWorker = encoderWorker || new Worker(global.workerPath + 'js/mp3Worker.js');
+    } catch (e) {
+      console.warn("Web workers are not defined, recording will not work.", e);
+    }
+  }
+  var audio_context, source;
+
+  var __log = function(e, data) {
+    var log = document.querySelector("#log");
+    if (log && log.length > 0) {
+      log = log[0];
+      log.innerHTML += "\n" + e + " " + (data || '');
+    } else {
+      console.log(e, data);
+    }
+  };
+
+  var Recorder = function(cfg) {
+    initWorker();
+    var config = cfg || {};
+    var bufferLen = config.bufferLen || 4096;
+    var self = this;
+    var btnPlay = document.createElement('button');
+    var btnRecord = document.createElement('button');
+    var btnStop = document.createElement('button');
+    var btnSave = document.createElement('button');
+    if (!config.element) {
+      __log('No element specified.  Cannot initialise recorder.');
+      return;
+    }
+    this.element = config.element;
+    this.vumeter = null;
+    this.outputFormat = config.format || config.element.getAttribute('data-format') || 'wav';
+    this.callback = config.callback || config.element.getAttribute('data-callback') || 'console.log';
+    this.audioData = null;
+
+    audio_context = global.audio_context;
+    source = global.audio_source;
+
+    this.context = source.context;
+    this.node = (this.context.createScriptProcessor ||
+      this.context.createJavaScriptNode).call(this.context,
+      bufferLen, 2, 2);
+    this.analyser = this.context.createAnalyser();
+    this.analyser.smoothingTimeConstant = 0.3;
+    this.analyser.fftSize = 1024;
+    this.audio = null;
+    this.playing = false;
+    var worker = new Worker(config.workerPath || WORKER_PATH);
+    worker.postMessage({
+      command: 'init',
+      config: {
+        sampleRate: this.context.sampleRate
+      }
+    });
+    var recording = false,
+      currCallback;
+
+    this.node.onaudioprocess = function(e) {
+      if (!recording) return;
+
+      worker.postMessage({
+        command: 'record',
+        buffer: [
+          e.inputBuffer.getChannelData(0)
+        ]
+      });
+
+      // VU Meter.
+      var array = new Uint8Array(self.analyser.frequencyBinCount);
+      self.analyser.getByteFrequencyData(array);
+      var values = 0;
+
+      var length = array.length;
+      for (var i = 0; i < length; i++) {
+        values += array[i];
+      }
+
+      var average = values / length;
+      self.vumeter.style.width = Math.min(parseInt(average * 2), 100) + '%';
+    };
+
+    this.configure = function(cfg) {
+      for (var prop in cfg) {
+        if (cfg.hasOwnProperty(prop)) {
+          config[prop] = cfg[prop];
+        }
+      }
+    };
+
+    this.toggleRecording = function() {
+      if (recording) {
+        return self.stop();
+      }
+      self.record();
+      btnStop.disabled = false;
+      btnPlay.disabled = true;
+      config.element.className += ' recording';
+      self.audio = null;
+      __log('Recording...');
+    };
+
+    this.record = function() {
+      recording = true;
+    };
+
+    this.stop = function() {
+      if (self.playing) {
+        self.audio.pause();
+        self.audio.currentTime = 0;
+        self.playing = false;
+        btnPlay.className = 'btn-play';
+        btnPlay.innerHTML = '<span class="recorder-icon-play"></span>';
+      } else {
+        self.stopRecording();
+        removeClass(config.element, 'recording');
+        __log('Stopped recording.');
+
+        // create WAV download link using audio data blob
+        self.exportWAV();
+
+        self.clear();
+      }
+      btnStop.disabled = true;
+      btnRecord.disabled = false;
+      btnSave.disabled = false;
+    };
+
+    this.stopRecording = function() {
+      recording = false;
+    };
+
+    this.play = function() {
+      if (self.playing) {
+        self.audio.pause();
+        self.playing = false;
+        btnStop.disabled = true;
+        btnRecord.disabled = false;
+        btnPlay.className = 'btn-play';
+        btnPlay.innerHTML = '<span class="recorder-icon-play"></span>';
+      } else {
+        if (self.audio === null) {
+          var reader = new FileReader();
+          reader.onload = function(event) {
+            self.audio = new Audio(event.target.result);
+            self.play();
+          };
+          reader.readAsDataURL(self.audioData);
+        } else {
+          self.audio.play();
+          self.playing = true;
+          btnStop.disabled = false;
+          btnRecord.disabled = true;
+          btnPlay.className = 'btn-pause';
+          btnPlay.innerHTML = '<span class="recorder-icon-pause"></span>';
+        }
+      }
+    };
+
+    this.save = function() {
+      btnPlay.disabled = true;
+      btnStop.disabled = true;
+      btnRecord.disabled = true;
+      btnSave.disabled = true;
+      config.element.className += ' processing';
+      if (self.outputFormat === 'mp3') {
+        self.convertToMP3();
+      } else {
+        // Assume WAV.
+        global[self.callback](self, self.audioData, config.element);
+      }
+    };
+
+    this.clear = function() {
+      worker.postMessage({
+        command: 'clear'
+      });
+      initButtons();
+      removeClass(config.element, 'recording');
+      removeClass(config.element, 'processing');
+    };
+
+    this.getBuffer = function(cb) {
+      currCallback = cb || config.callback;
+      worker.postMessage({
+        command: 'getBuffer'
+      });
+    };
+
+    this.exportWAV = function(type) {
+      type = type || config.type || 'audio/wav';
+      worker.postMessage({
+        command: 'exportWAV',
+        type: type
+      });
+    };
+
+    worker.onmessage = function(e) {
+      var blob = e.data;
+      self.audioData = blob;
+      btnPlay.disabled = false;
+    };
+
+    this.convertToMP3 = function() {
+      var arrayBuffer;
+      var fileReader = new FileReader();
+
+      fileReader.onload = function() {
+        arrayBuffer = this.result;
+        var buffer = new Uint8Array(arrayBuffer),
+          data = parseWav(buffer);
+
+        __log("Converting to Mp3");
+
+        encoderWorker.postMessage({
+          cmd: 'init',
+          config: {
+            mode: 3,
+            channels: 1,
+            samplerate: data.sampleRate,
+            bitrate: data.bitsPerSample
+          }
+        });
+
+        encoderWorker.postMessage({
+          cmd: 'encode',
+          buf: Uint8ArrayToFloat32Array(data.samples)
+        });
+        encoderWorker.postMessage({
+          cmd: 'finish'
+        });
+        encoderWorker.onmessage = function(e) {
+          if (e.data.cmd == 'data') {
+
+            __log("Done converting to Mp3");
+
+            var mp3Blob = new Blob([new Uint8Array(e.data.buf)], {
+              type: 'audio/mp3'
+            });
+            global[self.callback](self, mp3Blob, config.element);
+
+          }
+        };
+      };
+
+      fileReader.readAsArrayBuffer(this.audioData);
+    };
+
+
+    var encode64 = function(buffer) {
+      var binary = '',
+        bytes = new Uint8Array(buffer),
+        len = bytes.byteLength;
+
+      for (var i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return global.btoa(binary);
+    };
+
+    var parseWav = function(wav) {
+      var readInt = function(i, bytes) {
+        var ret = 0,
+          shft = 0;
+
+        while (bytes) {
+          ret += wav[i] << shft;
+          shft += 8;
+          i++;
+          bytes--;
+        }
+        return ret;
+      };
+      if (readInt(20, 2) != 1) throw 'Invalid compression code, not PCM';
+      if (readInt(22, 2) != 1) throw 'Invalid number of channels, not 1';
+      return {
+        sampleRate: readInt(24, 4),
+        bitsPerSample: readInt(34, 2),
+        samples: wav.subarray(44)
+      };
+    };
+
+    var Uint8ArrayToFloat32Array = function(u8a) {
+      var f32Buffer = new Float32Array(u8a.length);
+      for (var i = 0; i < u8a.length; i++) {
+        var value = u8a[i << 1] + (u8a[(i << 1) + 1] << 8);
+        if (value >= 0x8000) value |= ~0x7FFF;
+        f32Buffer[i] = value / 0x8000;
+      }
+      return f32Buffer;
+    };
+
+    var removeClass = function(el, name) {
+      el.className = el.className.replace(' ' + name, '');
+    };
+
+    var buildInterface = function() {
+      __log('Building interface...');
+      initButtons();
+      config.element.appendChild(btnPlay);
+      config.element.appendChild(btnRecord);
+      config.element.appendChild(btnStop);
+      config.element.appendChild(btnSave);
+      self.vumeter = config.element.querySelector('.btn-record .vumeter');
+      __log('Interface built.');
+    };
+    var initButtons = function() {
+      btnRecord.onclick = self.toggleRecording;
+      btnRecord.className = 'btn-record';
+      btnRecord.innerHTML = '<span class="vumeter"></span><span class="recorder-icon-record"></span>';
+      btnRecord.disabled = false;
+      btnStop.onclick = self.stop;
+      btnStop.className = 'btn-stop';
+      btnStop.innerHTML = '<span class="recorder-icon-stop"></span>';
+      btnStop.disabled = true;
+      btnPlay.onclick = self.play;
+      btnPlay.className = 'btn-play';
+      btnPlay.innerHTML = '<span class="recorder-icon-play"></span>';
+      btnPlay.disabled = true;
+      btnSave.onclick = self.save;
+      btnSave.className = 'btn-save';
+      btnSave.innerHTML = '<span class="recorder-icon-upload"></span>';
+      btnSave.disabled = true;
+    };
+
+    source.connect(this.analyser);
+    this.analyser.connect(this.node);
+    this.node.connect(this.context.destination);
+
+    buildInterface();
+
+    return this;
+    // __log('Recorder initialised.');
+  };
+
+  global.Recorder = Recorder;
+
+  var initRecorder = function() {
+    if (global.audio_context) {
+      console.log("audio_context already ready");
+      return;
+    }
+    try {
+      // webkit shim
+      global.AudioContext = global.AudioContext || global.webkitAudioContext;
+      navigator.getUserMedia = (navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia);
+      global.URL = global.URL || global.webkitURL;
+
+      audio_context = global.audio_context = new global.AudioContext();
+      __log('Audio context set up.');
+      __log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+    } catch (e) {
+      alert('No web audio support in this browser!');
+    }
+
+    navigator.getUserMedia({
+      audio: true
+    }, startUserMedia, function(e) {
+      __log('No live audio input: ' + e);
+    });
+  };
+
+  var startUserMedia = function(stream) {
+    if (global.audio_source) {
+      console.log("source already ready");
+      return;
+    }
+    source = global.audio_source = audio_context.createMediaStreamSource(stream);
+    __log('Media stream created.');
+    __log("input sample rate " + source.context.sampleRate);
+
+    var recorders = document.querySelectorAll('.RecordMP3js-recorder');
+    for (var i = 0; i < recorders.length; i++) {
+      recorders[i].recorder = new Recorder({
+        element: recorders[i]
+      });
+    }
+  };
+
+  if (global.addEventListener) {
+    global.addEventListener('load', initRecorder, false);
+  } else if (global.attachEvent) {
+    global.attachEvent('onload', initRecorder);
+  } else {
+    global.initRecorder = initRecorder;
+  }
+
+})(exports || window);
+
+},{}],80:[function(require,module,exports){
 /*
  * textgrid
  * https://github.com/OpenSourceFieldlinguistics/PraatTextGridJS
@@ -59456,7 +62263,7 @@ return Q;
 
 }(typeof exports === "object" && exports || this));
 
-},{}],78:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 //     Underscore.js 1.7.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -60873,10 +63680,10 @@ return Q;
   }
 }.call(this));
 
-},{}],79:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 module.exports={
   "name": "fielddb",
-  "version": "2.30.0",
+  "version": "2.37.06.13.09",
   "description": "An offline/online field database which adapts to its user's terminology and I-Language",
   "homepage": "https://github.com/OpenSourceFieldlinguistics/FieldDB/issues/milestones?state=closed",
   "repository": {
@@ -60914,10 +63721,13 @@ module.exports={
   "dependencies": {
     "MD5": "1.2.1",
     "atob": "^1.1.2",
+    "browserify-mime": "^1.2.9",
     "btoa": "^1.1.2",
     "crypto-js": "^3.1.2-5",
     "diacritic": "0.0.2",
+    "mime": "^1.2.11",
     "q": "1.0.1",
+    "recordmp3js": "~0.3.0",
     "textgrid": "2.2.0",
     "underscore": "^1.6.0"
   },
@@ -60932,6 +63742,7 @@ module.exports={
     "grunt-exec": "^0.4.6",
     "grunt-jasmine-node": "git://github.com/cesine/grunt-jasmine-node.git",
     "grunt-jsdoc": "0.4.3",
+    "grunt-newer": "^0.8.0",
     "jasmine-node": "^1.14.5"
   },
   "main": "./scripts/build_template_databases_using_fielddb.sh",
@@ -60952,7 +63763,7 @@ module.exports={
   ]
 }
 
-},{}]},{},[36])
+},{}]},{},[37])
 ;
 /**
  * @license AngularJS v1.2.26
@@ -65637,7 +68448,7 @@ function ngViewFillContentFactory($compile, $controller, $route) {
 /**!
  * AngularJS file upload/drop directive with http post and progress
  * @author  Danial  <danial.farid@gmail.com>
- * @version 1.6.5
+ * @version 1.6.12
  */
 (function() {
 
@@ -65781,16 +68592,35 @@ angularFileUpload.directive('ngFileSelect', [ '$parse', '$timeout', function($pa
 		var fn = $parse(attr['ngFileSelect']);
 		if (elem[0].tagName.toLowerCase() !== 'input' || (elem.attr('type') && elem.attr('type').toLowerCase()) !== 'file') {
 			var fileElem = angular.element('<input type="file">')
-			for (var i = 0; i < elem[0].attributes.length; i++) {
-				fileElem.attr(elem[0].attributes[i].name, elem[0].attributes[i].value);
+			var attrs = elem[0].attributes;
+			for (var i = 0; i < attrs.length; i++) {
+				if (attrs[i].name.toLowerCase() !== 'type') {
+					fileElem.attr(attrs[i].name, attrs[i].value);
+				}
 			}
-			if (elem.attr("data-multiple")) fileElem.attr("multiple", "true");
-			fileElem.css("top", 0).css("bottom", 0).css("left", 0).css("right", 0).css("width", "100%").
-					css("opacity", 0).css("position", "absolute").css('filter', 'alpha(opacity=0)');
+			if (attr["multiple"]) fileElem.attr("multiple", "true");
+			fileElem.css("width", "1px").css("height", "1px").css("opacity", 0).css("position", "absolute").css('filter', 'alpha(opacity=0)')
+					.css("padding", 0).css("margin", 0).css("overflow", "hidden");
+			fileElem.attr('__wrapper_for_parent_', true);
+
+//			fileElem.css("top", 0).css("bottom", 0).css("left", 0).css("right", 0).css("width", "100%").
+//					css("opacity", 0).css("position", "absolute").css('filter', 'alpha(opacity=0)').css("padding", 0).css("margin", 0);
 			elem.append(fileElem);
-			if (elem.css("position") === '' || elem.css("position") === 'static') {
-				elem.css("position", "relative");
-			}
+			elem[0].__file_click_fn_delegate_  = function() {
+				fileElem[0].click();
+			}; 
+			elem.bind('click', elem[0].__file_click_fn_delegate_);
+			elem.css("overflow", "hidden");
+//			if (fileElem.parent()[0] != elem[0]) {
+//				//fix #298 button element
+//				elem.wrap('<span>');
+//				elem.css("z-index", "-1000")
+//				elem.parent().append(fileElem);
+//				elem = elem.parent();
+//			}
+//			if (elem.css("position") === '' || elem.css("position") === 'static') {
+//				elem.css("position", "relative");
+//			}
 			elem = fileElem;
 		}
 		elem.bind('change', function(evt) {
@@ -65841,13 +68671,11 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', f
 		if ('draggable' in document.createElement('span')) {
 			var leaveTimeout = null;
 			elem[0].addEventListener("dragover", function(evt) {
-				evt.stopPropagation();
 				evt.preventDefault();
 				$timeout.cancel(leaveTimeout);
 				if (!elem[0].__drag_over_class_) {
-					if (attr['ngFileDragOverClass'].search(/\) *$/) > -1) {
-						dragOverClassFn = $parse(attr['ngFileDragOverClass']);
-						var dragOverClass = dragOverClassFn(scope, {
+					if (attr['ngFileDragOverClass'] && attr['ngFileDragOverClass'].search(/\) *$/) > -1) {
+						var dragOverClass = $parse(attr['ngFileDragOverClass'])(scope, {
 							$event : evt
 						});					
 						elem[0].__drag_over_class_ = dragOverClass; 
@@ -65858,7 +68686,6 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', f
 				elem.addClass(elem[0].__drag_over_class_);
 			}, false);
 			elem[0].addEventListener("dragenter", function(evt) {
-				evt.stopPropagation();
 				evt.preventDefault();
 			}, false);
 			elem[0].addEventListener("dragleave", function(evt) {
@@ -65869,7 +68696,6 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', f
 			}, false);
 			var fn = $parse(attr['ngFileDrop']);
 			elem[0].addEventListener("drop", function(evt) {
-				evt.stopPropagation();
 				evt.preventDefault();
 				elem.removeClass(elem[0].__drag_over_class_);
 				elem[0].__drag_over_class_ = null;
@@ -65887,7 +68713,8 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', f
 
 			function extractFiles(evt, callback) {
 				var files = [], items = evt.dataTransfer.items;
-				if (items && items.length > 0 && items[0].webkitGetAsEntry && $location.protocol() != 'file') {
+				if (items && items.length > 0 && items[0].webkitGetAsEntry && $location.protocol() != 'file' && 
+						items[0].webkitGetAsEntry().isDirectory) {
 					for (var i = 0; i < items.length; i++) {
 						var entry = items[i].webkitGetAsEntry();
 						if (entry != null) {
@@ -66053,6 +68880,15 @@ angular.module('contenteditable', [])
  * To change this template use File | Settings | File Templates.
  */
 
+// (function(angular){
+
+// function isDnDsSupported(){
+//     return 'draggable' in document.createElement("span");
+// }
+
+// if(!isDnDsSupported()){
+//     return;
+// }
 
 if (window.jQuery && (-1 == window.jQuery.event.props.indexOf("dataTransfer"))) {
     window.jQuery.event.props.push("dataTransfer");
@@ -66415,3 +69251,4 @@ angular.module("ang-drag-drop",[])
         }
     ]);
 
+// }(angular));
